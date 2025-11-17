@@ -5,7 +5,6 @@ import axios from "axios";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import LoaderOverlay from "../../components/LoaderOverlay";
-import SubjectTable from "./SubjectTable";
 
 const departments = [
   { value: "", label: "All Departments" },
@@ -165,7 +164,7 @@ export default function AddSubjectForm() {
         </button>
       </form>
 
-      <SubjectTable refreshKey={refreshKey} />
+      {/* <SubjectTable refreshKey={refreshKey} /> */}
     </section>
   );
 }

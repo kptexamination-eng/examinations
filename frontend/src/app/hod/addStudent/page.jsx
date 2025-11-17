@@ -9,7 +9,6 @@ import LoaderOverlay from "../../components/LoaderOverlay";
 import BulkUpload from "./bulkupload/BulkUpload";
 
 const departments = [
-  { value: "", label: "All Departments" },
   { value: "AT", label: "Automobile Engineering" },
   { value: "CH", label: "Chemical Engineering" },
   { value: "CE", label: "Civil Engineering" },
@@ -26,11 +25,12 @@ const semesters = Array.from({ length: 6 }, (_, i) => ({
   label: `${i + 1}`,
 }));
 
+// YEAR BATCHES (Correct)
 const batches = [
-  { value: "B1", label: "B1" },
-  { value: "B2", label: "B2" },
-  { value: "B3", label: "B3" },
-  { value: "B4", label: "B4" },
+  { value: "2025", label: "2025" },
+  { value: "2024", label: "2024" },
+  { value: "2023", label: "2023" },
+  { value: "2022", label: "2022" },
 ];
 
 const categories = [
@@ -50,20 +50,21 @@ export default function StudentForm() {
 
   const role = user?.publicMetadata?.role;
   const hodDepartment = user?.publicMetadata?.department;
-  const isScienceHOD = role === "HOD" && hodDepartment === "sc";
+  const isScienceHOD = role === "HOD" && hodDepartment === "SC";
 
   const [form, setForm] = useState({
-    registerNumber: "",
     name: "",
     fatherName: "",
     gender: "",
     category: "",
     email: "",
     phone: "",
-    department: hodDepartment || "",
+    admissionType: "REGULAR", // New field
+    originalDepartment: "00",
+    currentDepartment: hodDepartment || "",
+
     semester: "",
-    batch: "",
-    role: "Student",
+    batch: "", // year like 2025
     image: null,
   });
 
@@ -71,10 +72,20 @@ export default function StudentForm() {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
+
     if (name === "image" && files) {
       setForm({ ...form, image: files[0] });
     } else {
       setForm({ ...form, [name]: value });
+    }
+
+    // Set currentDepartment same as originalDepartment automatically
+    if (name === "originalDepartment") {
+      setForm({
+        ...form,
+        originalDepartment: value,
+        currentDepartment: value,
+      });
     }
   };
 
@@ -86,9 +97,15 @@ export default function StudentForm() {
       return;
     }
 
+    if (!form.batch) {
+      toast.error("⚠️ Please select admission year");
+      return;
+    }
+
     setStatus("saving");
 
     try {
+      // Uppercase transform except email
       const transformedForm = Object.fromEntries(
         Object.entries(form).map(([key, value]) => {
           if (typeof value === "string" && key !== "email") {
@@ -98,17 +115,18 @@ export default function StudentForm() {
         })
       );
 
+      // Add computed field: admissionYear = last 2 digits
+      const admissionYear = transformedForm.batch.slice(-2);
+
       const formData = new FormData();
       Object.entries(transformedForm).forEach(([key, value]) => {
         if (value) formData.append(key, value);
       });
 
-      // HOD cannot change department
-      if (role === "HOD") {
-        formData.set("department", hodDepartment);
-      }
+      formData.append("admissionYear", admissionYear);
 
       const token = await getToken();
+
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/students/addstudent`,
         formData,
@@ -122,24 +140,24 @@ export default function StudentForm() {
 
       toast.success("✅ Student added successfully!");
 
+      // Reset form
       setForm({
-        registerNumber: "",
         name: "",
         fatherName: "",
         gender: "",
         category: "",
         email: "",
         phone: "",
-        department: hodDepartment || "",
+        admissionType: "REGULAR",
+        originalDepartment: hodDepartment || "",
+        currentDepartment: hodDepartment || "",
         semester: "",
         batch: "",
-        role: "Student",
         image: null,
       });
     } catch (err) {
       console.error(err);
-      const message = err.response?.data?.message || "❌ Failed to add student";
-      toast.error(message);
+      toast.error(err.response?.data?.message || "❌ Failed to add student");
     } finally {
       setStatus(null);
     }
@@ -167,15 +185,20 @@ export default function StudentForm() {
               Add Individual Student
             </h3>
 
-            <input
-              name="registerNumber"
-              value={form.registerNumber}
+            {/* Admission Type */}
+            <select
+              name="admissionType"
+              value={form.admissionType}
               onChange={handleChange}
-              placeholder="Register Number"
               required
               className="block w-full rounded-md border px-3 py-2"
-            />
+            >
+              <option value="REGULAR">Regular Admission</option>
+              <option value="TRANSFER">Transfer Student</option>
+              <option value="LATERAL">Lateral Entry</option>
+            </select>
 
+            {/* Name */}
             <input
               name="name"
               value={form.name}
@@ -185,6 +208,7 @@ export default function StudentForm() {
               className="block w-full rounded-md border px-3 py-2"
             />
 
+            {/* Father Name */}
             <input
               name="fatherName"
               value={form.fatherName}
@@ -194,6 +218,7 @@ export default function StudentForm() {
               className="block w-full rounded-md border px-3 py-2"
             />
 
+            {/* Gender */}
             <select
               name="gender"
               value={form.gender}
@@ -207,6 +232,7 @@ export default function StudentForm() {
               <option value="OTHER">Other</option>
             </select>
 
+            {/* Category */}
             <select
               name="category"
               value={form.category}
@@ -221,6 +247,7 @@ export default function StudentForm() {
               ))}
             </select>
 
+            {/* Email */}
             <input
               name="email"
               type="email"
@@ -231,6 +258,7 @@ export default function StudentForm() {
               className="block w-full rounded-md border px-3 py-2"
             />
 
+            {/* Phone */}
             <input
               name="phone"
               type="tel"
@@ -244,17 +272,14 @@ export default function StudentForm() {
             {/* Department */}
             {role === "HOD" ? (
               <input
-                value={
-                  departments.find((d) => d.value === hodDepartment)?.label ||
-                  hodDepartment
-                }
+                value={hodDepartment}
                 disabled
                 className="block w-full rounded-md border px-3 py-2 bg-gray-100"
               />
             ) : (
               <select
-                name="department"
-                value={form.department}
+                name="originalDepartment"
+                value={form.originalDepartment}
                 onChange={handleChange}
                 required
                 className="block w-full rounded-md border px-3 py-2"
@@ -284,7 +309,7 @@ export default function StudentForm() {
               ))}
             </select>
 
-            {/* Batch */}
+            {/* Batch (YEAR) */}
             <select
               name="batch"
               value={form.batch}
@@ -292,7 +317,7 @@ export default function StudentForm() {
               required
               className="block w-full rounded-md border px-3 py-2"
             >
-              <option value="">Select Batch</option>
+              <option value="">Select Admission Year</option>
               {batches.map((b) => (
                 <option key={b.value} value={b.value}>
                   {b.label}
@@ -300,7 +325,7 @@ export default function StudentForm() {
               ))}
             </select>
 
-            {/* Image */}
+            {/* Image Upload */}
             <div className="flex items-center gap-4">
               {form.image ? (
                 <img
@@ -327,6 +352,7 @@ export default function StudentForm() {
               </label>
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"

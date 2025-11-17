@@ -36,7 +36,7 @@ export default function SubjectTable({ refreshKey }) {
       const token = await getToken();
       let url = `${process.env.NEXT_PUBLIC_API_URL}/api/subjects/getsubjects`;
 
-      if (role === "HOD" && hodDepartment !== "sc") {
+      if (role === "HOD" && hodDepartment !== "SC") {
         url += `?department=${hodDepartment}`;
       }
 

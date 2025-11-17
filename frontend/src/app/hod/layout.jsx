@@ -49,9 +49,20 @@ export default function HODLayout({ children }) {
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
+      label: "Subject List",
+      href: "/hod/subjectTable",
+      icon: <BookOpen className="w-5 h-5" />,
+    },
+
+    {
       label: "Add Student",
       href: "/hod/addStudent",
       icon: <Users className="w-5 h-5" />,
+    },
+    {
+      label: "Student List",
+      href: "/hod/studentTable",
+      icon: <BookOpen className="w-5 h-5" />,
     },
     {
       label: "Add Attendance",

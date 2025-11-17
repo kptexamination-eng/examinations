@@ -46,6 +46,18 @@ export default function AdminLayout({ children }) {
       href: "/admin/addHOD",
       icon: <UserCheck className="w-5 h-5" />,
     },
+
+    {
+      label: "Generate Register Num",
+      href: "/admin/regNumGen",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
+    {
+      label: "Change Student Department",
+      href: "/admin/transferDepartment",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
+
     // {
     //   label: "TimeTable Addition",
     //   href: "/admin/addTimetable",
