@@ -42,7 +42,7 @@ export const getSubjects = async (req, res) => {
     let filter = {};
 
     // If HOD, restrict to their department (except Science)
-    if (role === "hod" && hodDept && hodDept.toLowerCase() !== "sc") {
+    if (role === "HOD" && hodDept && hodDept.toLowerCase() !== "SC") {
       filter.department = hodDept.toLowerCase();
     }
 

@@ -15,6 +15,19 @@ export default function BulkUpload() {
   const [fileName, setFileName] = useState("");
   const [loadingFile, setLoadingFile] = useState(false);
 
+  const REQUIRED_FIELDS = [
+    "registerNumber",
+    "name",
+    "email",
+    "phone",
+    "department",
+    "semester",
+    "fatherName",
+    "gender",
+    "category",
+    "batch",
+  ];
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -31,18 +44,13 @@ export default function BulkUpload() {
         const parsed = XLSX.utils.sheet_to_json(sheet);
 
         // Validate required fields
-        const missing = parsed.filter(
-          (s) =>
-            !s.registerNumber ||
-            !s.name ||
-            !s.email ||
-            !s.phone ||
-            !s.department ||
-            !s.semester ||
-            !s.batch
+        const missingRows = parsed.filter((s) =>
+          REQUIRED_FIELDS.some((field) => !s[field])
         );
-        if (missing.length) {
+
+        if (missingRows.length > 0) {
           toast.error("❌ Some rows are missing required fields");
+          console.log("Missing rows:", missingRows);
           setLoadingFile(false);
           return;
         }
@@ -65,8 +73,10 @@ export default function BulkUpload() {
     }
 
     setStatus("saving");
+
     try {
       const token = await getToken();
+
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/students/bulk-add`,
         { students },
@@ -78,16 +88,19 @@ export default function BulkUpload() {
       );
 
       if (res.data.success) {
-        toast.success("All students added successfully!");
+        toast.success("🎉 All students added successfully!");
       } else {
+        // Show errors per student
         res.data.results.forEach((r) => {
           if (!r.success) {
-            toast.error(`Student ${r.registerNumber}: ${r.message}`);
+            toast.error(`❌ ${r.registerNumber}: ${r.message}`);
           }
         });
-        toast.success("Bulk add completed with some errors");
+
+        toast.success("Bulk upload completed with some errors");
       }
 
+      // Reset UI
       setStudents([]);
       setFileName("");
     } catch (err) {
@@ -99,7 +112,7 @@ export default function BulkUpload() {
   };
 
   return (
-    <section className="p-6 bg-white rounded-2xl shadow-lg">
+    <section className="p-6 bg-white rounded-2xl shadow-lg mt-8">
       {(status === "saving" || loadingFile) && (
         <LoaderOverlay
           message={
@@ -114,7 +127,7 @@ export default function BulkUpload() {
         Bulk Student Upload
       </h2>
 
-      {/* Upload Area */}
+      {/* Upload Box */}
       <label
         htmlFor="file-upload"
         className="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:bg-gray-50 transition"
@@ -124,12 +137,14 @@ export default function BulkUpload() {
         ) : (
           <Upload className="w-10 h-10 text-blue-600 mb-2" />
         )}
+
         <span className="text-gray-700 font-medium">
           {fileName ? "Change Excel File" : "Click or Drag & Drop Excel File"}
         </span>
         <span className="text-sm text-gray-500 mt-1">
-          Supports .xlsx and .xls
+          Supports .xlsx & .xls
         </span>
+
         <input
           id="file-upload"
           type="file"
@@ -139,7 +154,7 @@ export default function BulkUpload() {
         />
       </label>
 
-      {/* File Info */}
+      {/* File Name */}
       {fileName && (
         <div className="flex items-center mt-4 text-gray-700">
           <FileSpreadsheet className="w-6 h-6 text-green-600 mr-2" />
@@ -147,7 +162,7 @@ export default function BulkUpload() {
         </div>
       )}
 
-      {/* Students Preview */}
+      {/* Student Count */}
       {students.length > 0 && (
         <p className="text-green-600 font-medium mt-4">
           ✅ {students.length} students ready to upload
@@ -157,8 +172,8 @@ export default function BulkUpload() {
       {/* Upload Button */}
       <button
         onClick={handleUpload}
-        className="mt-6 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={!students.length || status === "saving"}
+        className="mt-6 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
       >
         {status === "saving" ? (
           <span className="flex items-center">

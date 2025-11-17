@@ -9,29 +9,39 @@ import LoaderOverlay from "../../components/LoaderOverlay";
 import BulkUpload from "./bulkupload/BulkUpload";
 
 const departments = [
-  { value: "cs", label: "Computer Science Engineering" },
-  { value: "ce", label: "Civil Engineering" },
-  { value: "me", label: "Mechanical Engineering" },
-  { value: "ec", label: "Electronics & Communication Engineering" },
-  { value: "eee", label: "Electrical & Electronics Engineering" },
-  { value: "ch", label: "Chemical Engineering" },
-  { value: "po", label: "Polymer Engineering" },
-  { value: "at", label: "Automobile Engineering" },
-  { value: "sc", label: "Science and English" },
+  { value: "", label: "All Departments" },
+  { value: "AT", label: "Automobile Engineering" },
+  { value: "CH", label: "Chemical Engineering" },
+  { value: "CE", label: "Civil Engineering" },
+  { value: "CS", label: "Computer Science Engineering" },
+  { value: "EC", label: "Electronics & Communication Engineering" },
+  { value: "EEE", label: "Electrical & Electronics Engineering" },
+  { value: "ME", label: "Mechanical Engineering" },
+  { value: "PO", label: "Polymer Engineering" },
+  { value: "SC", label: "Science and English" },
 ];
 
-// ✅ Only 6 semesters
 const semesters = Array.from({ length: 6 }, (_, i) => ({
   value: (i + 1).toString(),
   label: `${i + 1}`,
 }));
 
-// ✅ Example batch options (you can customize)
 const batches = [
   { value: "B1", label: "B1" },
   { value: "B2", label: "B2" },
   { value: "B3", label: "B3" },
   { value: "B4", label: "B4" },
+];
+
+const categories = [
+  { value: "GM", label: "GM (General Merit)" },
+  { value: "SC", label: "SC (Scheduled Caste)" },
+  { value: "ST", label: "ST (Scheduled Tribe)" },
+  { value: "C1", label: "Category 1" },
+  { value: "2A", label: "Category 2A" },
+  { value: "2B", label: "Category 2B" },
+  { value: "3A", label: "Category 3A" },
+  { value: "3B", label: "Category 3B" },
 ];
 
 export default function StudentForm() {
@@ -40,20 +50,23 @@ export default function StudentForm() {
 
   const role = user?.publicMetadata?.role;
   const hodDepartment = user?.publicMetadata?.department;
-
   const isScienceHOD = role === "HOD" && hodDepartment === "sc";
 
   const [form, setForm] = useState({
     registerNumber: "",
     name: "",
+    fatherName: "",
+    gender: "",
+    category: "",
     email: "",
     phone: "",
     department: hodDepartment || "",
     semester: "",
-    batch: "", // new batch field
-    role: "student",
+    batch: "",
+    role: "Student",
     image: null,
   });
+
   const [status, setStatus] = useState(null);
 
   const handleChange = (e) => {
@@ -90,7 +103,7 @@ export default function StudentForm() {
         if (value) formData.append(key, value);
       });
 
-      // Force department for HODs
+      // HOD cannot change department
       if (role === "HOD") {
         formData.set("department", hodDepartment);
       }
@@ -108,15 +121,19 @@ export default function StudentForm() {
       );
 
       toast.success("✅ Student added successfully!");
+
       setForm({
         registerNumber: "",
         name: "",
+        fatherName: "",
+        gender: "",
+        category: "",
         email: "",
         phone: "",
         department: hodDepartment || "",
         semester: "",
         batch: "",
-        role: "student",
+        role: "Student",
         image: null,
       });
     } catch (err) {
@@ -141,6 +158,7 @@ export default function StudentForm() {
       ) : (
         <>
           <BulkUpload />
+
           <form
             onSubmit={handleSubmit}
             className="space-y-4 bg-white p-6 mt-14 rounded-lg shadow"
@@ -162,10 +180,46 @@ export default function StudentForm() {
               name="name"
               value={form.name}
               onChange={handleChange}
-              placeholder="Full name"
+              placeholder="Full Name"
               required
               className="block w-full rounded-md border px-3 py-2"
             />
+
+            <input
+              name="fatherName"
+              value={form.fatherName}
+              onChange={handleChange}
+              placeholder="Father's Name"
+              required
+              className="block w-full rounded-md border px-3 py-2"
+            />
+
+            <select
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              required
+              className="block w-full rounded-md border px-3 py-2"
+            >
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="block w-full rounded-md border px-3 py-2"
+            >
+              <option value="">Select Category (Optional)</option>
+              {categories.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
 
             <input
               name="email"
@@ -182,12 +236,12 @@ export default function StudentForm() {
               type="tel"
               value={form.phone}
               onChange={handleChange}
-              placeholder="Phone"
+              placeholder="Phone Number"
               required
               className="block w-full rounded-md border px-3 py-2"
             />
 
-            {/* Department field */}
+            {/* Department */}
             {role === "HOD" ? (
               <input
                 value={
@@ -195,7 +249,7 @@ export default function StudentForm() {
                   hodDepartment
                 }
                 disabled
-                className="block w-full rounded-md border px-3 py-2 bg-gray-100 text-gray-600"
+                className="block w-full rounded-md border px-3 py-2 bg-gray-100"
               />
             ) : (
               <select
@@ -205,7 +259,7 @@ export default function StudentForm() {
                 required
                 className="block w-full rounded-md border px-3 py-2"
               >
-                <option value="">Select a department</option>
+                <option value="">Select Department</option>
                 {departments.map((dept) => (
                   <option key={dept.value} value={dept.value}>
                     {dept.label}
@@ -214,7 +268,7 @@ export default function StudentForm() {
               </select>
             )}
 
-            {/* Semester field */}
+            {/* Semester */}
             <select
               name="semester"
               value={form.semester}
@@ -222,7 +276,7 @@ export default function StudentForm() {
               required
               className="block w-full rounded-md border px-3 py-2"
             >
-              <option value="">Select a semester</option>
+              <option value="">Select Semester</option>
               {semesters.map((sem) => (
                 <option key={sem.value} value={sem.value}>
                   {sem.label}
@@ -230,7 +284,7 @@ export default function StudentForm() {
               ))}
             </select>
 
-            {/* Batch field */}
+            {/* Batch */}
             <select
               name="batch"
               value={form.batch}
@@ -238,7 +292,7 @@ export default function StudentForm() {
               required
               className="block w-full rounded-md border px-3 py-2"
             >
-              <option value="">Select a batch</option>
+              <option value="">Select Batch</option>
               {batches.map((b) => (
                 <option key={b.value} value={b.value}>
                   {b.label}
@@ -246,7 +300,7 @@ export default function StudentForm() {
               ))}
             </select>
 
-            {/* Profile Image */}
+            {/* Image */}
             <div className="flex items-center gap-4">
               {form.image ? (
                 <img
@@ -259,6 +313,7 @@ export default function StudentForm() {
                   <ImageIcon className="w-6 h-6 text-gray-400" />
                 </div>
               )}
+
               <label className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg border cursor-pointer hover:bg-blue-100 transition">
                 <Upload className="w-5 h-5 inline-block mr-2" />
                 Upload

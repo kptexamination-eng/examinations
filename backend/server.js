@@ -9,6 +9,8 @@ import { clerkMiddleware } from "@clerk/express";
 
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
+
 import subjectRoutes from "./routes/subjectRoutes.js";
 
 dotenv.config();
@@ -50,6 +52,7 @@ app.get("/", (req, res) => {
 // ------------------------------
 app.use("/api/users", userRoutes);
 app.use("/api/subjects", subjectRoutes);
+app.use("/api/students", studentRoutes);
 
 // ------------------------------
 // ❌ Error Handler (MUST be last)
