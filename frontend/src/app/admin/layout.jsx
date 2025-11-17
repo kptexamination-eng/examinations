@@ -46,11 +46,11 @@ export default function AdminLayout({ children }) {
       href: "/admin/addHOD",
       icon: <UserCheck className="w-5 h-5" />,
     },
-    {
-      label: "TimeTable Addition",
-      href: "/admin/addTimetable",
-      icon: <ClipboardCheck className="w-5 h-5" />,
-    },
+    // {
+    //   label: "TimeTable Addition",
+    //   href: "/admin/addTimetable",
+    //   icon: <ClipboardCheck className="w-5 h-5" />,
+    // },
   ];
 
   return (
