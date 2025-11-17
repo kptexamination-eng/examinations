@@ -1,0 +1,24 @@
+import express from "express";
+import {
+  createUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  syncUser,
+} from "../controllers/userController.js";
+import { uploadSingleImage } from "../middleware/uploadImage.js";
+import { authenticateUser } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+// Clerk-protected routes
+router.post("/adduser", authenticateUser, uploadSingleImage, createUser);
+router.get("/getusers", authenticateUser, getUsers);
+router.get("/getuser/:id", authenticateUser, getUserById);
+router.put("/updateuser/:id", authenticateUser, uploadSingleImage, updateUser);
+router.delete("/deleteuser/:id", authenticateUser, deleteUser);
+
+router.post("/syncuser", authenticateUser, syncUser);
+
+export default router;
