@@ -5,7 +5,7 @@ import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Trash2, Pencil, Check, X } from "lucide-react";
-import LoaderOverlay from "../LoaderOverlay";
+import LoaderOverlay from "../../components/LoaderOverlay";
 
 export default function AdminSubjectList({ refreshKey }) {
   const { getToken } = useAuth();
