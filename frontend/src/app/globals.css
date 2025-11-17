@@ -1,0 +1,53 @@
+@import "tailwindcss";
+:root{
+  /* --- Core palette (vibrant, accessible contrast) --- */
+  --color-primary-600: #0066ff;    /* strong blue */
+  --color-primary-500: #1e7bff;
+  --color-primary-400: #4aa3ff;
+
+  --color-secondary-600: #7c3aed;  /* violet */
+  --color-secondary-500: #8b5cf6;
+  --color-secondary-400: #a78bfa;
+
+  --color-accent-600: #ff6b35;     /* energetic orange */
+  --color-accent-500: #ff8452;
+  --color-accent-400: #ff9d7a;
+
+  --color-bg: #f6f8fb;             /* subtle cool background */
+  --color-surface: #ffffff;        /* main cards / surfaces */
+  --muted-700: #374151;            /* for text */
+  --muted-500: #6b7280;
+
+  /* semantic elevations */
+  --shadow-soft: 0 6px 20px rgba(20, 24, 40, 0.08);
+  --shadow-medium: 0 10px 30px rgba(20, 24, 40, 0.12);
+  --shadow-strong: 0 20px 60px rgba(8, 14, 40, 0.18);
+
+  /* smooth gradients */
+  --primary-gradient: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%);
+  --accent-gradient: linear-gradient(135deg, var(--color-accent-500) 0%, var(--color-primary-400) 100%);
+
+  /* radius */
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+}
+
+/* small utility for surface card */
+.surface-card{
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-medium);
+  color: var(--muted-700);
+}
+
+/* modern heading */
+.h-slab {
+  font-weight: 700;
+  color: var(--muted-700);
+}
+
+/* subtle link */
+.link-muted {
+  color: var(--muted-500);
+}
