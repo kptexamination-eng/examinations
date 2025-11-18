@@ -1,247 +1,242 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
-export default function HODSubjectAllocation() {
+export default function HODSubjectAllocationPage() {
   const { getToken } = useAuth();
+  const { user } = useUser();
 
-  const [semester, setSemester] = useState("");
-  const [section, setSection] = useState("A");
+  const hodDept = user?.publicMetadata?.department;
 
   const [subjects, setSubjects] = useState([]);
   const [staff, setStaff] = useState([]);
-
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [staffEntries, setStaffEntries] = useState([
-    { staffId: "", portions: "" },
-  ]);
-
   const [loading, setLoading] = useState(false);
 
-  // -------------------------------------------------------
-  // 1. Load subjects for selected semester
-  // -------------------------------------------------------
-  const loadSubjects = async () => {
-    if (!semester) return;
-    setLoading(true);
+  const [form, setForm] = useState({
+    subjectId: "",
+    semester: "",
+    section: "A",
+    staffList: [
+      {
+        staffId: "",
+        portions: "",
+      },
+    ],
+  });
 
+  // ---------------------------------------------------------
+  // Load Subjects & Staff for HOD's Department
+  // ---------------------------------------------------------
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const token = await getToken();
+
+        // 1. Load subjects for this dept
+        const subjectsRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/subjects/getsubjects?department=${hodDept}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 2. Load staff of HOD dept
+        const staffRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/getUsers?department=${hodDept}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        setSubjects(subjectsRes.data.data || []);
+        setStaff(staffRes.data.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load data");
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // ---------------------------------------------------------
+  // Add Staff Row
+  // ---------------------------------------------------------
+  const addStaffRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      staffList: [...prev.staffList, { staffId: "", portions: "" }],
+    }));
+  };
+
+  // ---------------------------------------------------------
+  // Remove Staff Row
+  // ---------------------------------------------------------
+  const removeStaffRow = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      staffList: prev.staffList.filter((_, i) => i !== index),
+    }));
+  };
+
+  // ---------------------------------------------------------
+  // Submit Allocation
+  // ---------------------------------------------------------
+  const handleSubmit = async () => {
     try {
+      setLoading(true);
       const token = await getToken();
 
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/subjects/getsubjects?semester=${semester}`,
+      const payload = {
+        subjectId: form.subjectId,
+        department: hodDept,
+        semester: form.semester,
+        section: form.section,
+        staff: form.staffList.map((s) => ({
+          staffId: s.staffId, // sending Clerk ID (backend converts)
+          portions: s.portions,
+        })),
+      };
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/subject-allocations`,
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res.data);
-      setSubjects(res.data.data);
+
+      toast.success("Subject allocated successfully!");
+
+      setForm({
+        subjectId: "",
+        semester: "",
+        section: "A",
+        staffList: [{ staffId: "", portions: "" }],
+      });
     } catch (err) {
       console.error(err);
+      toast.error(err.response?.data?.message || "Failed to assign subject");
     } finally {
       setLoading(false);
     }
   };
 
-  // -------------------------------------------------------
-  // 2. Load department staff
-  // -------------------------------------------------------
-  useEffect(() => {
-    const loadStaff = async () => {
-      try {
-        const token = await getToken();
-
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/getusers?role=Staff`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setStaff(res.data.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    loadStaff();
-  }, []);
-
-  // -------------------------------------------------------
-  // Add new staff entry
-  // -------------------------------------------------------
-  const addStaffEntry = () => {
-    setStaffEntries([...staffEntries, { staffId: "", portions: "" }]);
-  };
-
-  // Remove staff entry
-  const removeEntry = (index) => {
-    const updated = [...staffEntries];
-    updated.splice(index, 1);
-    setStaffEntries(updated);
-  };
-
-  // Update staff entry
-  const updateEntry = (index, field, value) => {
-    const updated = [...staffEntries];
-    updated[index][field] = value;
-    setStaffEntries(updated);
-  };
-
-  // -------------------------------------------------------
-  // 3. Submit allocation
-  // -------------------------------------------------------
-  const submitAllocation = async () => {
-    if (!selectedSubject) return alert("Select a subject");
-
-    try {
-      const token = await getToken();
-
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/subject-allocations`,
-        {
-          subjectId: selectedSubject,
-          semester,
-          section,
-          department: subjects.find((s) => s._id === selectedSubject)
-            ?.department,
-          staff: staffEntries,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      alert("Subject allocated successfully!");
-    } catch (error) {
-      console.error(error);
-      alert("Unable to allocate subject");
-    }
-  };
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-5">HOD - Subject Allocation</h1>
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Assign Subject to Staff</h1>
 
-      {/* Semester Selector */}
-      <label>Semester</label>
+      {/* Subject Selection */}
+      <label className="font-medium">Select Subject</label>
       <select
+        value={form.subjectId}
+        onChange={(e) => setForm({ ...form, subjectId: e.target.value })}
         className="border p-2 rounded w-full mb-4"
-        value={semester}
-        onChange={(e) => setSemester(e.target.value)}
+      >
+        <option value="">-- Select Subject --</option>
+        {subjects.map((sub) => (
+          <option key={sub._id} value={sub._id}>
+            {sub.code} - {sub.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Semester */}
+      <label className="font-medium">Semester</label>
+      <select
+        value={form.semester}
+        onChange={(e) => setForm({ ...form, semester: e.target.value })}
+        className="border p-2 rounded w-full mb-4"
       >
         <option value="">-- Select Semester --</option>
         {[1, 2, 3, 4, 5, 6].map((sem) => (
           <option key={sem} value={sem}>
-            {sem}
+            Semester {sem}
           </option>
         ))}
       </select>
 
-      {/* Section Selector */}
-      <label>Section</label>
+      {/* Section */}
+      <label className="font-medium">Section</label>
       <select
+        value={form.section}
+        onChange={(e) => setForm({ ...form, section: e.target.value })}
         className="border p-2 rounded w-full mb-4"
-        value={section}
-        onChange={(e) => setSection(e.target.value)}
       >
-        {["A", "B", "C"].map((sec) => (
-          <option key={sec} value={sec}>
-            {sec}
-          </option>
-        ))}
+        <option value="A">A</option>
+        <option value="B">B</option>
       </select>
 
-      {/* Load Subjects Button */}
+      {/* Staff Rows */}
+      <h2 className="text-lg font-semibold mb-2">Assign Staff</h2>
+
+      {form.staffList.map((staffItem, index) => (
+        <div
+          key={index}
+          className="border p-3 rounded mb-3 bg-gray-50 flex gap-4"
+        >
+          {/* Staff Dropdown */}
+          <div className="flex-1">
+            <label className="font-medium">Staff</label>
+            <select
+              value={staffItem.staffId}
+              onChange={(e) => {
+                const newList = [...form.staffList];
+                newList[index].staffId = e.target.value;
+                setForm({ ...form, staffList: newList });
+              }}
+              className="border p-2 rounded w-full"
+            >
+              <option value="">-- Select Staff --</option>
+              {staff.map((st) => (
+                <option key={st._id} value={st._id}>
+                  {st.name} ({st.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Portions */}
+          <div className="flex-1">
+            <label className="font-medium">Portions</label>
+            <input
+              type="text"
+              value={staffItem.portions}
+              onChange={(e) => {
+                const newList = [...form.staffList];
+                newList[index].portions = e.target.value;
+                setForm({ ...form, staffList: newList });
+              }}
+              className="border p-2 rounded w-full"
+              placeholder="e.g., Units 1–2"
+            />
+          </div>
+
+          {/* Remove Staff Row */}
+          {index > 0 && (
+            <button
+              onClick={() => removeStaffRow(index)}
+              className="bg-red-500 text-white px-3 h-10 rounded mt-7"
+            >
+              X
+            </button>
+          )}
+        </div>
+      ))}
+
+      {/* Add Staff Button */}
       <button
-        onClick={loadSubjects}
-        disabled={!semester}
+        onClick={addStaffRow}
         className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
       >
-        Load Subjects
+        + Add Another Staff
       </button>
 
-      {/* Subject Selector */}
-      {subjects.length > 0 && (
-        <>
-          <label>Select Subject</label>
-          <select
-            className="border p-2 rounded w-full mb-4"
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-          >
-            <option value="">-- Select Subject --</option>
-
-            {subjects.map((sub) => (
-              <option key={sub._id} value={sub._id}>
-                {sub.code} - {sub.name}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-
-      {/* Staff Entries */}
-      {selectedSubject && (
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Assign Staff</h2>
-
-          {staffEntries.map((entry, index) => (
-            <div
-              key={index}
-              className="border p-3 rounded mb-3 bg-gray-50 flex gap-3"
-            >
-              {/* Select Staff */}
-              <select
-                className="border p-2 rounded flex-1"
-                value={entry.staffId}
-                onChange={(e) => updateEntry(index, "staffId", e.target.value)}
-              >
-                <option value="">-- Select Staff --</option>
-
-                {staff.map((st) => (
-                  <option key={st._id} value={st._id}>
-                    {st.name} ({st.email})
-                  </option>
-                ))}
-              </select>
-
-              {/* Portion Notes */}
-              <input
-                type="text"
-                placeholder="Portions (e.g., Units 1-2)"
-                value={entry.portions}
-                onChange={(e) => updateEntry(index, "portions", e.target.value)}
-                className="border p-2 rounded flex-1"
-              />
-
-              {/* Remove */}
-              {index > 0 && (
-                <button
-                  onClick={() => removeEntry(index)}
-                  className="bg-red-500 text-white px-3 py-1 rounded"
-                >
-                  X
-                </button>
-              )}
-            </div>
-          ))}
-
-          {/* Add More Staff */}
-          <button
-            onClick={addStaffEntry}
-            className="bg-gray-700 text-white px-4 py-2 rounded"
-          >
-            + Add Another Staff
-          </button>
-
-          {/* Save Allocation */}
-          <button
-            onClick={submitAllocation}
-            className="bg-green-600 text-white px-4 py-2 rounded mt-6 block"
-          >
-            Save Allocation
-          </button>
-        </div>
-      )}
+      {/* Submit */}
+      <button
+        disabled={loading}
+        onClick={handleSubmit}
+        className="bg-green-600 text-white px-4 py-2 rounded w-full"
+      >
+        {loading ? "Saving..." : "Save Allocation"}
+      </button>
     </div>
   );
 }

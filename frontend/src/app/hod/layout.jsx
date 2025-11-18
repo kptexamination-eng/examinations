@@ -44,6 +44,11 @@ export default function HODLayout({ children }) {
       icon: <UserPlus className="w-5 h-5" />,
     },
     {
+      label: "Manage Subjects to Staff",
+      href: "/hod/HODManageAllocations",
+      icon: <UserPlus className="w-5 h-5" />,
+    },
+    {
       label: "Add Staff",
       href: "/hod/addStaff",
       icon: <UserPlus className="w-5 h-5" />,
