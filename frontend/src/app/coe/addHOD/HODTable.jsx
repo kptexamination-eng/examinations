@@ -21,7 +21,7 @@ export default function HODTable() {
 
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/getusers`,
-        { headers:{ "x-clerk-auth-token": token }}
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const list = res.data?.data || []; // safe fallback
@@ -47,7 +47,7 @@ export default function HODTable() {
       const token = await getToken();
       await axios.delete(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/deleteuser/${id}`,
-        { headers:{ "x-clerk-auth-token": token }}
+        { headers: { "x-clerk-auth-token": token } }
       );
       setUsers(users.filter((u) => u._id !== id));
       toast.success("✅ Member deleted successfully");

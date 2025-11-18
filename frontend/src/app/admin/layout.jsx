@@ -32,8 +32,8 @@ export default function AdminLayout({ children }) {
 
   const nav = [
     {
-      label: "Dashboard",
-      href: "/admin",
+      label: "Profile",
+      href: "/admin/myProfile",
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {

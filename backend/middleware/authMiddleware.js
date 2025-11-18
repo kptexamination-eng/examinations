@@ -3,24 +3,24 @@ import { getAuth, clerkClient } from "@clerk/express";
 
 export const authenticateUser = async (req, res, next) => {
   try {
-    const { userId } = getAuth(req);
+    const { userId } = getAuth(req); // Clerk verifies JWT here
 
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized. No userId found." });
     }
 
-    // Fetch user from Clerk
+    // Fetch full user info from Clerk
     const user = await clerkClient.users.getUser(userId);
 
     if (!user) {
-      return res.status(401).json({ error: "Unauthorized. User not found." });
+      return res.status(401).json({ error: "Unauthorized user" });
     }
 
     req.user = {
-      id: user.id,
-      email: user.emailAddresses[0]?.emailAddress,
+      clerkId: user.id, // ✔ correct field
+      email: user.emailAddresses[0]?.emailAddress || null,
       role: user.publicMetadata?.role || null,
-      department: user.publicMetadata?.department || null, // 🔑 added
+      department: user.publicMetadata?.department || null,
     };
 
     next();

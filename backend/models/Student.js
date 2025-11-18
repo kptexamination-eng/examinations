@@ -38,6 +38,7 @@ const studentSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     phone: { type: String, required: true },
     fatherName: { type: String, required: true },
+    motherName: { type: String, required: true },
     gender: { type: String, required: true },
     category: { type: String },
 

@@ -236,7 +236,19 @@ export const createUser = async (req, res) => {
 // READ all users
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const { role, department } = req.query;
+
+    let filter = {};
+
+    if (role) {
+      filter.role = role;
+    }
+
+    if (department) {
+      filter.department = department.toUpperCase();
+    }
+
+    const users = await User.find(filter).sort({ name: 1 });
     res.json({ success: true, data: users });
   } catch (err) {
     console.error("GetUsers Error:", err);
@@ -421,7 +433,7 @@ export const deleteUser = async (req, res) => {
 // SYNC user (Clerk → MongoDB if missing)
 export const syncUser = async (req, res) => {
   try {
-    const clerkId = req.user?.id;
+    const clerkId = req.user?.clerkId;
     if (!clerkId) {
       return res
         .status(400)

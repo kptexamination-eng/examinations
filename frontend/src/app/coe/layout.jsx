@@ -10,21 +10,21 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 
-export default function AdminLayout({ children }) {
+export default function coeLayout({ children }) {
   const { isLoaded, isSignedIn, user } = useUser();
   const pathname = usePathname();
 
   if (!isLoaded) return <div>Loading...</div>;
   if (!isSignedIn) return <RedirectToSignIn />;
 
-  // Allowed admin-level roles
-  const allowed = ["Admin", "Principal", "Registrar"];
+  // Allowed coe-level roles
+  const allowed = ["COE"];
   if (!allowed.includes(user?.publicMetadata?.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50 text-red-700">
         <div className="p-6 bg-white rounded-lg shadow">
           <p className="text-xl font-semibold">🚫 Access Denied</p>
-          <p>You are not allowed to access the admin panel.</p>
+          <p>You are not allowed to access the coe panel.</p>
         </div>
       </div>
     );
@@ -32,23 +32,28 @@ export default function AdminLayout({ children }) {
 
   const nav = [
     {
-      label: "Dashboard",
-      href: "/admin",
+      label: "Profile",
+      href: "/coe/myProfile",
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
+      label: "HOD Addition",
+      href: "/coe/addHOD",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
+    {
       label: "Members List",
-      href: "/admin/membersList",
+      href: "/coe/membersList",
       icon: <Files className="w-5 h-5" />,
     },
     {
-      label: "HOD Addition",
-      href: "/admin/addHOD",
+      label: "Generate Register Num",
+      href: "/coe/regNumGen",
       icon: <UserCheck className="w-5 h-5" />,
     },
     // {
     //   label: "TimeTable Addition",
-    //   href: "/admin/addTimetable",
+    //   href: "/coe/addTimetable",
     //   icon: <ClipboardCheck className="w-5 h-5" />,
     // },
   ];
@@ -59,7 +64,7 @@ export default function AdminLayout({ children }) {
       <aside className="w-64 bg-white shadow-xl border-r flex flex-col">
         {/* Logo Area */}
         <div className="h-17 flex items-center px-6 border-b bg-gradient-to-r from-blue-600 to-blue-800">
-          <h1 className="text-xl font-semibold text-white">KPT Admin</h1>
+          <h1 className="text-xl font-semibold text-white">KPT COE</h1>
         </div>
 
         {/* Navigation */}
@@ -96,9 +101,7 @@ export default function AdminLayout({ children }) {
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
         <header className="h-16 bg-white shadow-sm px-8 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Admin Dashboard
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-800">COE Dashboard</h2>
 
           <div className="flex items-center gap-4">
             <Link

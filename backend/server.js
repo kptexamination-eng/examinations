@@ -11,6 +11,7 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import regNumGenRoutes from "./routes/regNumGenRoutes.js";
+import subjectAllocationRoutes from "./routes/subjectAllocationRoutes.js";
 
 import subjectRoutes from "./routes/subjectRoutes.js";
 
@@ -55,6 +56,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/regnum", regNumGenRoutes);
+app.use("/api/subject-allocations", subjectAllocationRoutes);
 
 // ------------------------------
 // ❌ Error Handler (MUST be last)

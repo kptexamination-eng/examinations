@@ -87,7 +87,7 @@ export default function AddStaffForm() {
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
+            "x-clerk-auth-token": token,
           },
         }
       );

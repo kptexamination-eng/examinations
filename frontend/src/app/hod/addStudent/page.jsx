@@ -6,7 +6,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Upload, Image as ImageIcon } from "lucide-react";
 import LoaderOverlay from "../../components/LoaderOverlay";
-import BulkUpload from "./bulkupload/BulkUpload";
+import BulkUpload from "../addSubject/bulkupload/BulkUpload";
 
 const departments = [
   { value: "AT", label: "Automobile Engineering" },
@@ -55,6 +55,7 @@ export default function StudentForm() {
   const [form, setForm] = useState({
     name: "",
     fatherName: "",
+    motherName: "",
     gender: "",
     category: "",
     email: "",
@@ -144,6 +145,7 @@ export default function StudentForm() {
       setForm({
         name: "",
         fatherName: "",
+        motherName: "",
         gender: "",
         category: "",
         email: "",
@@ -214,6 +216,14 @@ export default function StudentForm() {
               value={form.fatherName}
               onChange={handleChange}
               placeholder="Father's Name"
+              required
+              className="block w-full rounded-md border px-3 py-2"
+            />
+            <input
+              name="motherName"
+              value={form.motherName}
+              onChange={handleChange}
+              placeholder="Mother's Name"
               required
               className="block w-full rounded-md border px-3 py-2"
             />

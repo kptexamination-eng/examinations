@@ -7,6 +7,10 @@ import {
   deleteStudent,
   searchStudents,
   bulkAddStudents,
+  requestProfileEdit,
+  handleEditRequest,
+  getPendingEditRequests,
+  deleteEditRequest,
 } from "../controllers/studentController.js";
 
 import { authenticateUser } from "../middleware/authMiddleware.js";
@@ -17,6 +21,16 @@ const router = express.Router();
 // All routes require Clerk auth
 router.use(authenticateUser);
 
+router.post(
+  "/request-edit",
+  authenticateUser,
+  uploadSingleImage,
+  requestProfileEdit
+);
+router.get("/edit-requests/pending", authenticateUser, getPendingEditRequests);
+
+// HOD approves / rejects
+router.post("/edit-request/:requestId", authenticateUser, handleEditRequest);
 // Add student
 router.post("/addstudent", uploadSingleImage, createStudent);
 
@@ -28,6 +42,7 @@ router.get("/getstudent/:id", getStudentById);
 
 // Update student
 router.put("/updatestudent/:id", uploadSingleImage, updateStudent);
+router.delete("/edit-request/:id", authenticateUser, deleteEditRequest);
 
 // Delete student
 router.delete("/deletestudent/:id", deleteStudent);

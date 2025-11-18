@@ -34,9 +34,14 @@ export default function HODLayout({ children }) {
 
   const nav = [
     {
-      label: "Dashboard",
-      href: "/hod",
+      label: "Profile",
+      href: "/hod/myProfile",
       icon: <LayoutDashboard className="w-5 h-5" />,
+    },
+    {
+      label: "Assign Subjects to Staff",
+      href: "/hod/staffSubAllocation",
+      icon: <UserPlus className="w-5 h-5" />,
     },
     {
       label: "Add Staff",
@@ -62,6 +67,12 @@ export default function HODLayout({ children }) {
     {
       label: "Student List",
       href: "/hod/studentTable",
+      icon: <BookOpen className="w-5 h-5" />,
+    },
+
+    {
+      label: "Student Edited Profile Approval",
+      href: "/hod/studProfileEditApproval",
       icon: <BookOpen className="w-5 h-5" />,
     },
     {

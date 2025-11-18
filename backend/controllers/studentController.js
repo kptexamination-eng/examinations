@@ -2,6 +2,165 @@ import Student from "../models/Student.js";
 import cloudinary from "../config/cloudinary.js";
 import { clerkClient } from "@clerk/express";
 import mongoose from "mongoose";
+import StudentEditRequest from "../models/StudentEditRequest.js";
+
+/* ===========================================================
+   STUDENT → REQUEST EDIT
+=========================================================== */
+export const requestProfileEdit = async (req, res) => {
+  try {
+    const { clerkId } = req.user;
+    const changes = { ...req.body };
+
+    const student = await Student.findOne({ clerkId });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // If image was uploaded
+    if (req.cloudinaryResult) {
+      changes.imageUrl = req.cloudinaryResult.secure_url;
+      changes.imagePublicId = req.cloudinaryResult.public_id;
+    }
+
+    const newRequest = await StudentEditRequest.create({
+      studentId: student._id,
+      clerkId,
+      requestedChanges: changes,
+    });
+
+    res.json({
+      success: true,
+      message: "Edit request submitted for HOD approval",
+      data: newRequest,
+    });
+  } catch (err) {
+    console.error("Edit Request Error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+/* ===========================================================
+   DELETE EDIT REQUEST (HOD only)
+=========================================================== */
+export const deleteEditRequest = async (req, res) => {
+  try {
+    const { role } = req.user;
+
+    if (role !== "HOD") {
+      return res.status(403).json({
+        success: false,
+        message: "Only HOD can delete requests",
+      });
+    }
+
+    const { id } = req.params;
+
+    const deleted = await StudentEditRequest.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Edit request deleted successfully",
+    });
+  } catch (err) {
+    console.error("Delete Edit Request Error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/* ===========================================================
+   HOD → APPROVE / REJECT EDIT REQUEST
+=========================================================== */
+export const handleEditRequest = async (req, res) => {
+  try {
+    const { role, department } = req.user;
+
+    if (role !== "HOD") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Only HOD allowed" });
+    }
+
+    const { requestId } = req.params;
+    const { action, remarks } = req.body;
+
+    const request = await StudentEditRequest.findById(requestId).populate(
+      "studentId"
+    );
+
+    if (!request)
+      return res
+        .status(404)
+        .json({ success: false, message: "Request not found" });
+
+    // Department restriction
+    if (request.studentId.currentDepartment !== department.toUpperCase()) {
+      return res.status(403).json({
+        success: false,
+        message: "HOD cannot approve other department students",
+      });
+    }
+
+    // --- APPROVE ---
+    if (action === "APPROVE") {
+      await Student.findByIdAndUpdate(
+        request.studentId._id,
+        request.requestedChanges,
+        { new: true }
+      );
+    }
+
+    // DELETE REQUEST AFTER PROCESSING
+    await request.deleteOne();
+
+    res.json({
+      success: true,
+      message: `Request ${action.toLowerCase()} and removed`,
+    });
+  } catch (err) {
+    console.error("Handle Edit Error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getPendingEditRequests = async (req, res) => {
+  try {
+    const { role, department } = req.user;
+
+    if (role !== "HOD")
+      return res
+        .status(403)
+        .json({ success: false, message: "Only HOD allowed" });
+
+    const dept = department.toUpperCase();
+
+    const requests = await StudentEditRequest.find({ status: "PENDING" })
+      .populate("studentId")
+      .sort({ createdAt: 1 });
+
+    // Filter by department
+    const filtered = requests.filter(
+      (r) => r.studentId.currentDepartment === dept
+    );
+
+    res.json({ success: true, data: filtered });
+  } catch (err) {
+    console.error("Fetch Pending Requests Error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 /* ===========================================================
    BULK ADD STUDENTS
@@ -33,6 +192,7 @@ export const bulkAddStudents = async (req, res) => {
           semester,
           batch,
           fatherName,
+          motherName,
           gender,
           category,
           admissionType,
@@ -41,6 +201,7 @@ export const bulkAddStudents = async (req, res) => {
         // Normalize
         name = name?.toUpperCase();
         fatherName = fatherName?.toUpperCase();
+        motherName = motherName?.toUpperCase();
         gender = gender?.toUpperCase();
         category = category?.toUpperCase();
         currentDepartment = currentDepartment?.toUpperCase();
@@ -55,6 +216,7 @@ export const bulkAddStudents = async (req, res) => {
           !semester ||
           !batch ||
           !fatherName ||
+          !motherName ||
           !gender ||
           !admissionType
         ) {
@@ -124,6 +286,7 @@ export const bulkAddStudents = async (req, res) => {
             semester,
             batch,
             fatherName,
+            motherName,
             gender,
             category,
             role: "Student",
@@ -175,7 +338,7 @@ export const createStudent = async (req, res) => {
       currentDepartment,
       semester,
       batch,
-      fatherName,
+      fatherName,motherName,
       gender,
       category,
       admissionType,
@@ -186,6 +349,7 @@ export const createStudent = async (req, res) => {
     currentDepartment = currentDepartment?.toUpperCase();
     admissionType = admissionType?.toUpperCase();
     fatherName = fatherName?.toUpperCase();
+    motherName = motherName?.toUpperCase();
     name = name?.toUpperCase();
     gender = gender?.toUpperCase();
     category = category?.toUpperCase();
@@ -253,6 +417,7 @@ export const createStudent = async (req, res) => {
       semester,
       batch,
       fatherName,
+      motherName,
       gender,
       category,
       role: "Student",
@@ -425,48 +590,74 @@ export const deleteStudent = async (req, res) => {
 /* ===========================================================
    GET STUDENT BY ID
    =========================================================== */
+/* ===========================================================
+   GET STUDENT BY ID (Student Profile + Admin/HOD access)
+   =========================================================== */
 export const getStudentById = async (req, res) => {
   try {
-    const { role, department } = req.user;
+    const { role, clerkId: loggedInClerkId, department } = req.user;
     const dept = department?.toUpperCase();
 
     let studentId = req.params.id;
 
+    // STUDENT → Fetch own profile
+    if (studentId === "me") {
+      const self = await Student.findOne({ clerkId: loggedInClerkId });
+      if (!self) {
+        return res.status(404).json({
+          success: false,
+          message: "Your student profile was not found",
+        });
+      }
+      return res.json({ success: true, data: self });
+    }
+
+    // if id is ClerkId instead of MongoId
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
       const std = await Student.findOne({ clerkId: studentId });
-      if (!std)
+      if (!std) {
         return res
           .status(404)
           .json({ success: false, message: "Student not found" });
+      }
       studentId = std._id;
     }
 
     const student = await Student.findById(studentId);
-    if (!student)
+    if (!student) {
       return res
         .status(404)
         .json({ success: false, message: "Student not found" });
+    }
 
-    // Department restriction
+    // Student allowed ONLY own profile
+    if (role === "Student") {
+      if (student.clerkId !== loggedInClerkId) {
+        return res.status(403).json({
+          success: false,
+          message: "You cannot view other students",
+        });
+      }
+      return res.json({ success: true, data: student });
+    }
+
+    // HOD restrictions
     if (role === "HOD" && dept !== "SC") {
       if (student.currentDepartment !== dept) {
         return res.status(403).json({
           success: false,
-          message: "You can only view students from your department",
+          message: "HOD cannot view other departments",
         });
       }
     }
 
-    if (role !== "Admin" && role !== "HOD") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized",
-      });
-    }
-
-    res.json({ success: true, data: student });
+    return res.json({ success: true, data: student });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("GetStudentById Error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
