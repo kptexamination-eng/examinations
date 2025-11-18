@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const pendingIASchema = new mongoose.Schema({
   subjectAllocation: {
     type: mongoose.Schema.Types.ObjectId,

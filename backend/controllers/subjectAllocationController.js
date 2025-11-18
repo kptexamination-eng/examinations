@@ -3,48 +3,62 @@ import SubjectAllocation from "../models/SubjectAllocation.js";
 import Subject from "../models/Subject.js";
 import User from "../models/User.js";
 
+// Returns MongoId for ANY staff identifier: MongoId OR ClerkId
+async function resolveStaffId(id) {
+  // Case 1: Already valid MongoId → return directly
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return id;
+  }
+
+  // Case 2: Clerk ID → find corresponding Mongo ID
+  const mongoUser = await User.findOne({ clerkId: id });
+  if (!mongoUser) return null;
+
+  return mongoUser._id;
+}
 export const createSubjectAllocation = async (req, res) => {
   try {
     const { subjectId, department, semester, section, staff } = req.body;
 
-    // Validate staff IDs (they must be valid Mongo ObjectIds)
+    const mongoStaffArray = [];
+
     for (const s of staff) {
-      if (!mongoose.Types.ObjectId.isValid(s.staffId)) {
+      const mongoId = await resolveStaffId(s.staffId);
+
+      if (!mongoId) {
         return res.status(400).json({
-          message: `Invalid staffId: ${s.staffId}`,
+          message: `Unable to resolve staffId: ${s.staffId}`,
         });
       }
+
+      mongoStaffArray.push({
+        staffId: mongoId,
+        portions: s.portions || "",
+      });
     }
 
-    // Prevent duplicate allocation
     const exists = await SubjectAllocation.findOne({
       subject: subjectId,
       semester,
       section,
     });
 
-    if (exists) {
+    if (exists)
       return res.status(400).json({
         message: "Subject already allocated for this semester & section.",
       });
-    }
 
-    // Save allocation
     const allocation = await SubjectAllocation.create({
       subject: subjectId,
       department,
       semester,
       section,
-      staff: staff.map((s) => ({
-        staffId: s.staffId,
-        portions: s.portions || "",
-      })),
+      staff: mongoStaffArray,
     });
 
-    res.json({ success: true, message: "Allocation created", allocation });
+    res.json({ success: true, allocation });
   } catch (error) {
-    console.error("CREATE ALLOCATION ERROR:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -54,22 +68,22 @@ export const createSubjectAllocation = async (req, res) => {
 export const updateSubjectAllocation = async (req, res) => {
   try {
     const { id } = req.params;
-
     let updateData = { ...req.body };
 
-    // If staff is updated, convert ClerkId -> MongoId again
     if (updateData.staff) {
       const newStaff = [];
 
       for (const s of updateData.staff) {
-        const mongoUser = await User.findOne({ clerkId: s.staffId });
-        if (!mongoUser)
+        const mongoId = await resolveStaffId(s.staffId);
+
+        if (!mongoId) {
           return res.status(400).json({
-            message: `No Mongo user found for staff ${s.staffId}`,
+            message: `Unable to resolve staffId: ${s.staffId}`,
           });
+        }
 
         newStaff.push({
-          staffId: mongoUser._id,
+          staffId: mongoId,
           portions: s.portions || "",
         });
       }
@@ -77,18 +91,14 @@ export const updateSubjectAllocation = async (req, res) => {
       updateData.staff = newStaff;
     }
 
-    const allocation = await SubjectAllocation.findByIdAndUpdate(
-      id,
-      updateData,
-      {
-        new: true,
-      }
-    );
+    const alloc = await SubjectAllocation.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
-    if (!allocation)
+    if (!alloc)
       return res.status(404).json({ message: "Allocation not found" });
 
-    res.json({ success: true, message: "Allocation updated", allocation });
+    res.json({ success: true, allocation: alloc });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -139,15 +149,22 @@ export const getAllocationsForHOD = async (req, res) => {
 // ---------------------------------------------------------------------------
 export const getStaffAllocations = async (req, res) => {
   try {
-    const staffMongoId = req.user.mongoId; // ✔ use MongoId
+    const clerkId = req.user.clerkId;
+
+    // Convert Clerk → Mongo
+    const mongoUser = await User.findOne({ clerkId });
+    if (!mongoUser)
+      return res
+        .status(400)
+        .json({ success: false, message: "Mongo user not found for staff" });
 
     const allocations = await SubjectAllocation.find({
-      "staff.staffId": staffMongoId,
+      "staff.staffId": mongoUser._id,
     }).populate("subject");
 
     res.json({ success: true, data: allocations });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

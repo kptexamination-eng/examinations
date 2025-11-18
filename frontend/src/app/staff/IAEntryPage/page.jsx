@@ -52,7 +52,7 @@ export default function IAEntryPage() {
       const allocation = subjects.find((s) => s._id === selectedAllocation);
 
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students?department=${allocation.department}&semester=${allocation.semester}&section=${allocation.section}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/students/getstudents?department=${allocation.department}&semester=${allocation.semester}&section=${allocation.section}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -150,7 +150,7 @@ export default function IAEntryPage() {
             <tbody>
               {students.map((s) => (
                 <tr key={s._id}>
-                  <td className="border p-2">{s.usn}</td>
+                  <td className="border p-2">{s.registerNumber}</td>
                   <td className="border p-2">{s.name}</td>
                   <td className="border p-2">
                     <input

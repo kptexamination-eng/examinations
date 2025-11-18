@@ -1,4 +1,4 @@
-import IA from "../models/IA.js";
+import IA from "../models/InternalMarks.js";
 
 // ---------------------------------------------------------------------------
 // UPDATE/ENTER INTERNAL MARKS

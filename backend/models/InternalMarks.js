@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const iaSchema = new mongoose.Schema({
   subjectAllocation: {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,3 +19,5 @@ const iaSchema = new mongoose.Schema({
     ref: "User",
   },
 });
+
+export default mongoose.model("IA", iaSchema);
