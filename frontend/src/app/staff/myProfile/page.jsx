@@ -25,7 +25,6 @@ export default function UserProfile() {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res.data.data);
       setProfile(res.data.data);
     } catch (err) {
       console.error(err);

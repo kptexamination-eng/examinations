@@ -43,7 +43,6 @@ export default function SubjectTable({ refreshKey }) {
       const res = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res.data.data);
       setSubjects(res.data.data);
     } catch (err) {
       console.error(err);

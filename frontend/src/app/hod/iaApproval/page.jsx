@@ -39,7 +39,6 @@ export default function HODIAApproval() {
       `${process.env.NEXT_PUBLIC_API_URL}/api/ia/pending/subject/${selectedSubject}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    console.log(res.data);
     setPending(res.data);
     setLoading(false);
   };

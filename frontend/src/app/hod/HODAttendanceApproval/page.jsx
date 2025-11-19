@@ -41,7 +41,6 @@ export default function HODAttendanceApproval() {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log("Pending Attendance:", res.data);
     setPending(res.data);
     setLoading(false);
   };

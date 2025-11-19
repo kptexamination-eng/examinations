@@ -67,7 +67,6 @@ export default function StudentTable() {
       );
 
       let data = res.data.data;
-      console.log(data);
       // HOD restrictions
       if (role === "HOD" && hodDepartment !== "SC") {
         data = data.filter(

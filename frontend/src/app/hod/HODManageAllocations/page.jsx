@@ -29,7 +29,6 @@ export default function HODManageAllocations() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/subject-allocations/hod?department=${department}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res.data);
       setAllocations(res.data.data || []);
     } catch (err) {
       console.error(err);

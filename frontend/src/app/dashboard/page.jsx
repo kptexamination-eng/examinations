@@ -30,7 +30,7 @@ export default function Dashboard() {
           }
         );
 
-        console.log("✅ Synced user:", res.data);
+        console.log("✅ Synced user:");
       } catch (err) {
         console.error("❌ Sync error:", err.response?.data || err.message);
       }

@@ -55,8 +55,6 @@ export default function IAEntryPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/students/getstudents?department=${allocation.department}&semester=${allocation.semester}&section=${allocation.section}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res);
-      // ALWAYS use res.data.data
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
 
       // Filter valid students (must have ObjectId)
