@@ -1,20 +1,26 @@
+// models/Attendance.js
 import mongoose from "mongoose";
 
-const attendanceSchema = new mongoose.Schema({
-  subjectAllocation: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "SubjectAllocation",
-    required: true,
+const AttendanceSchema = new mongoose.Schema(
+  {
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
+    },
+
+    subjectAllocation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubjectAllocation",
+      required: true,
+    },
+
+    presentHours: Number, // e.g., 48 out of 60
+    totalHours: Number, // from subject.totalAttendanceHours
+    percentage: Number, // auto-calculated
+    isEligible: Boolean,
   },
-  studentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  date: Date,
-  present: Boolean,
-  markedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-});
+  { timestamps: true }
+);
+
+export default mongoose.model("Attendance", AttendanceSchema);

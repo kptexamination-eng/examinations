@@ -437,46 +437,88 @@ export const syncUser = async (req, res) => {
     if (!clerkId) {
       return res
         .status(400)
-        .json({ success: false, message: "Missing clerk id" });
+        .json({ success: false, message: "Missing clerkId" });
     }
 
+    // 1️⃣ Fetch Clerk user
+    const clerkUser = await clerkClient.users.getUser(clerkId);
+
+    const email =
+      clerkUser.emailAddresses?.[0]?.emailAddress ||
+      clerkUser.primaryEmailAddress?.emailAddress;
+
+    const phone =
+      clerkUser.phoneNumbers?.[0]?.phoneNumber ||
+      clerkUser.primaryPhoneNumber?.phoneNumber ||
+      "N/A";
+
+    const name = clerkUser.firstName || "Unknown";
+
+    const normalizedRole = normalizeRole(
+      clerkUser.publicMetadata?.role || clerkUser.public_metadata?.role
+    );
+
+    const normalizedDept = normalizeDepartment(
+      clerkUser.publicMetadata?.department ||
+        clerkUser.public_metadata?.department
+    );
+
+    // -----------------------------------------------------------
+    // 2️⃣ FIRST: Check MongoDB by existing clerkId
+    // -----------------------------------------------------------
     let user = await User.findOne({ clerkId });
 
-    if (!user) {
-      // fetch clerk user
-      const clerkUser = await clerkClient.users.getUser(clerkId);
-
-      // Normalize role & department found in Clerk publicMetadata
-      const normalizedRole = normalizeRole(
-        clerkUser.publicMetadata?.role || clerkUser.public_metadata?.role
-      );
-      const normalizedDept = normalizeDepartment(
-        clerkUser.publicMetadata?.department ||
-          clerkUser.public_metadata?.department
-      );
-
-      user = new User({
-        name: clerkUser.firstName || "Unknown",
-        email:
-          clerkUser.emailAddresses?.[0]?.emailAddress ||
-          clerkUser.primaryEmailAddress?.emailAddress ||
-          "unknown@example.com",
-        phone:
-          clerkUser.phoneNumbers?.[0]?.phoneNumber ||
-          clerkUser.primaryPhoneNumber?.phoneNumber ||
-          "N/A",
-        role: normalizedRole || "Student",
-        department: normalizedDept || "",
-        clerkId: clerkUser.id,
-        imageUrl: clerkUser.profileImageUrl || "/default-avatar.png",
-        isActive: true,
-      });
+    if (user) {
+      // User already synced earlier → update basic fields
+      user.name = name;
+      user.email = email?.toLowerCase();
+      user.phone = phone;
+      user.role = normalizedRole || user.role;
+      user.department = normalizedDept || user.department;
+      user.imageUrl = clerkUser.profileImageUrl;
 
       await user.save();
-      console.log(`✅ Synced new user: ${user.email}`);
+      console.log("✅ Existing (by clerkId) Mongo user synced.");
+      return res.json({ success: true, data: user });
     }
 
-    return res.json({ success: true, data: user });
+    // -----------------------------------------------------------
+    // 3️⃣ SECOND: Check MongoDB by email (THIS FIXES DUPLICATES)
+    // -----------------------------------------------------------
+    user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // Attach Clerk ID to existing user instead of creating new record
+      user.clerkId = clerkId;
+      user.name = name;
+      user.phone = phone;
+      user.role = normalizedRole || user.role;
+      user.department = normalizedDept || user.department;
+      user.imageUrl = clerkUser.profileImageUrl;
+
+      await user.save();
+      console.log("🔥 Merged existing Mongo user with Clerk ID.");
+      return res.json({ success: true, data: user });
+    }
+
+    // -----------------------------------------------------------
+    // 4️⃣ THIRD: No match found → create new Mongo user
+    // -----------------------------------------------------------
+    const newUser = new User({
+      name,
+      email: email.toLowerCase(),
+      phone,
+      role: normalizedRole || "Student",
+      department: normalizedDept || "",
+      clerkId,
+      imageUrl: clerkUser.profileImageUrl,
+      isActive: true,
+    });
+
+    await newUser.save();
+    console.log("✨ New Mongo user created from Clerk login.");
+
+    return res.json({ success: true, data: newUser });
   } catch (err) {
     console.error("SyncUser Error:", err);
     res.status(500).json({ success: false, message: err.message });

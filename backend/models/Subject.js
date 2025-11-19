@@ -24,6 +24,15 @@ const subjectSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    iaMaxMarks: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    totalAttendanceHours: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

@@ -81,13 +81,24 @@ export default function HODLayout({ children }) {
       icon: <BookOpen className="w-5 h-5" />,
     },
     {
-      label: "Add Attendance",
-      href: "/hod/addAttendance",
+      label: "Approve Attendance",
+      href: "/hod/HODAttendanceApproval",
       icon: <CheckSquare className="w-5 h-5" />,
     },
     {
-      label: "Add IA Marks",
-      href: "/hod/addIA",
+      label: "Download Attendance",
+      href: "/hod/HODAttendanceDownload",
+      icon: <CheckSquare className="w-5 h-5" />,
+    },
+   
+    {
+      label: "Approve IA Marks",
+      href: "/hod/iaApproval",
+      icon: <FileSpreadsheet className="w-5 h-5" />,
+    },
+    {
+      label: "IA Eligibility Download",
+      href: "/hod/iaEligibilitydownload",
       icon: <FileSpreadsheet className="w-5 h-5" />,
     },
   ];

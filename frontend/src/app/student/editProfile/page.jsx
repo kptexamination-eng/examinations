@@ -70,7 +70,6 @@ export default function EditProfile() {
         }
       );
 
-      console.log("hiiiiiiii");
       toast.success("Request submitted. Waiting for HOD approval.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to submit");

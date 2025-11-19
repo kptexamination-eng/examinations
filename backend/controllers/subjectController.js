@@ -3,7 +3,7 @@ import Subject from "../models/Subject.js";
 // ✅ Create Subject
 export const createSubject = async (req, res) => {
   try {
-    const { code, name, semester, department } = req.body;
+    const { code, name, semester, department, iaMaxMarks } = req.body;
 
     // Check if the subject code already exists for the same department
     const existing = await Subject.findOne({
@@ -23,6 +23,7 @@ export const createSubject = async (req, res) => {
       name,
       semester,
       department: department.toLowerCase(),
+      iaMaxMarks: iaMaxMarks ?? undefined, // use provided value or default
     });
 
     res.status(201).json({
@@ -81,7 +82,7 @@ export const getSubjectById = async (req, res) => {
 export const updateSubject = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, name, semester, department } = req.body;
+    const { code, name, semester, department, iaMaxMarks } = req.body;
 
     const subject = await Subject.findByIdAndUpdate(
       id,
@@ -90,6 +91,7 @@ export const updateSubject = async (req, res) => {
         name,
         semester,
         department: department.toLowerCase(),
+        iaMaxMarks: iaMaxMarks ?? undefined, // allow updating or keep existing
       },
       { new: true, runValidators: true }
     );

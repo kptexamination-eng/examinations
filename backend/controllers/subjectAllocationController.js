@@ -186,3 +186,22 @@ export const getStudentSubjects = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ---------------------------------------------------------------------------
+// GET ALL ALLOCATIONS
+// ---------------------------------------------------------------------------
+export const getAllAllocations = async (req, res) => {
+  try {
+    const allocations = await SubjectAllocation.find()
+      .populate("subject")
+      .populate({
+        path: "staff.staffId",
+        select: "name email clerkId imageUrl",
+      })
+      .sort({ department: 1, semester: 1, section: 1 });
+
+    res.json({ success: true, data: allocations });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

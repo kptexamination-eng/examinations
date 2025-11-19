@@ -38,7 +38,7 @@ export default function AdminLayout({ children }) {
     },
     {
       label: "Mark Subject Attendance",
-      href: "/staff/myAttendance",
+      href: "/staff/StaffAttendanceEntry",
       icon: <Files className="w-5 h-5" />,
     },
     {

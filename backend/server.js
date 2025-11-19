@@ -13,6 +13,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import regNumGenRoutes from "./routes/regNumGenRoutes.js";
 import iaRoutes from "./routes/iaRoutes.js";
 import subjectAllocationRoutes from "./routes/subjectAllocationRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 
 import subjectRoutes from "./routes/subjectRoutes.js";
 
@@ -59,6 +60,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/regnum", regNumGenRoutes);
 app.use("/api/ia", iaRoutes);
 app.use("/api/subject-allocations", subjectAllocationRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 // ------------------------------
 // ❌ Error Handler (MUST be last)

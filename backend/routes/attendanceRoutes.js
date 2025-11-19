@@ -1,17 +1,31 @@
 import express from "express";
 import {
-  markAttendance,
-  getAttendance,
+  submitAttendance,
+  getPendingAttendance,
+  approveAttendance,
+  getStudentAttendance,
+  getPendingAttendanceBySubject,
 } from "../controllers/attendanceController.js";
-import { requireAuthWithRole } from "../middleware/auth.js";
+
+import { authenticateUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", requireAuthWithRole(["Staff"]), markAttendance);
+// Staff submits
+router.post("/submit", authenticateUser, submitAttendance);
+
+// HOD pending list
+router.get("/pending/:allocationId", authenticateUser, getPendingAttendance);
+
+// HOD approves
+router.post("/approve/:pendingId", authenticateUser, approveAttendance);
 router.get(
-  "/:subjectAllocationId",
-  requireAuthWithRole(["Staff"]),
-  getAttendance
+  "/pending/subject/:subjectId",
+  authenticateUser,
+  getPendingAttendanceBySubject
 );
+
+// Student view
+router.get("/student/my", authenticateUser, getStudentAttendance);
 
 export default router;

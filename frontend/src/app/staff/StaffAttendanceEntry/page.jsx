@@ -1,26 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
 
-export default function IAEntryPage() {
+export default function StaffAttendanceEntry() {
   const { getToken } = useAuth();
 
-  const [subjects, setSubjects] = useState([]);
-  const [selectedAllocation, setSelectedAllocation] = useState("");
+  const [allocations, setAllocations] = useState([]);
+  const [selectedAlloc, setSelectedAlloc] = useState("");
 
   const [students, setStudents] = useState([]);
-  const [marks, setMarks] = useState({}); // { studentId: finalIA }
+  const [attendance, setAttendance] = useState({}); // { studentId: { present, total } }
 
-  const [maxMarks, setMaxMarks] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // ---------------------------------------------------------
-  // Load subjects handled by staff
+  // Load allocations handled by staff (same as IA working code)
   // ---------------------------------------------------------
   useEffect(() => {
-    const loadSubjects = async () => {
+    const loadAllocations = async () => {
       try {
         const token = await getToken();
 
@@ -31,46 +30,43 @@ export default function IAEntryPage() {
 
         const result = Array.isArray(res.data.data) ? res.data.data : res.data;
 
-        setSubjects(result);
-      } catch (error) {
-        console.error("Failed to load subjects:", error);
-        setSubjects([]);
+        setAllocations(result);
+      } catch (err) {
+        console.error("Failed to load allocations:", err);
       }
     };
 
-    loadSubjects();
+    loadAllocations();
   }, []);
 
   // ---------------------------------------------------------
-  // Load students for selected subject
+  // Load students based on allocation (JUST LIKE IA WORKING CODE)
   // ---------------------------------------------------------
   const loadStudents = async () => {
     setLoading(true);
-
     try {
       const token = await getToken();
-      const allocation = subjects.find((s) => s._id === selectedAllocation);
+
+      const allocation = allocations.find((s) => s._id === selectedAlloc);
 
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/students/getstudents?department=${allocation.department}&semester=${allocation.semester}&section=${allocation.section}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(res);
-      // ALWAYS use res.data.data
+
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
 
-      // Filter valid students (must have ObjectId)
       const validStudents = list.filter((stu) => stu && stu._id);
 
       setStudents(validStudents);
 
-      // Build marks object cleanly
-      const m = {};
+      // Build attendance object
+      const att = {};
       validStudents.forEach((stu) => {
-        m[String(stu._id)] = "";
+        att[String(stu._id)] = { present: "", total: "" };
       });
 
-      setMarks(m);
+      setAttendance(att);
     } catch (err) {
       console.error("Error loading students:", err);
     } finally {
@@ -79,44 +75,30 @@ export default function IAEntryPage() {
   };
 
   // ---------------------------------------------------------
-  // Handle IA value change
+  // Submit attendance to backend
   // ---------------------------------------------------------
-  const handleMarkChange = (studentId, value) => {
-    // Prevent negative and > max
-    if (value < 0) value = 0;
-    if (maxMarks && value > maxMarks) value = maxMarks;
-
-    setMarks((prev) => ({
-      ...prev,
-      [studentId]: value,
-    }));
-  };
-
-  // ---------------------------------------------------------
-  // Submit all IA marks to Pending IA table
-  // ---------------------------------------------------------
-  const submitIA = async () => {
+  const submitAttendance = async () => {
     try {
       const token = await getToken();
 
-      // Validate all fields
-      for (const [sid, ia] of Object.entries(marks)) {
-        if (ia === "" || ia === null || ia === undefined) {
-          alert("Please fill all IA marks before submitting.");
+      // Validate all values
+      for (const [sid, val] of Object.entries(attendance)) {
+        if (!val.present || !val.total) {
+          alert("Please fill all attendance values.");
           return;
         }
       }
 
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ia/pending`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/submit`,
         {
-          subjectAllocationId: selectedAllocation,
-          marks,
+          subjectAllocationId: selectedAlloc,
+          attendance,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("IA Marks submitted for HOD approval!");
+      alert("Attendance submitted for HOD approval");
     } catch (err) {
       console.error(err);
       alert("Submission failed.");
@@ -125,20 +107,19 @@ export default function IAEntryPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Internal Assessment Entry</h1>
+      <h1 className="text-2xl font-bold mb-4">Attendance Entry</h1>
 
       {/* Select Subject */}
       <label className="font-semibold">Select Subject</label>
       <select
         className="border p-2 rounded w-full mb-4"
-        value={selectedAllocation}
-        onChange={(e) => setSelectedAllocation(e.target.value)}
+        value={selectedAlloc}
+        onChange={(e) => setSelectedAlloc(e.target.value)}
       >
         <option value="">-- Select --</option>
-        {subjects.map((s) => (
-          <option key={s._id} value={s._id}>
-            {s.subject.code} - {s.subject.name} (Sem {s.semester} Sec{" "}
-            {s.section})
+        {allocations.map((a) => (
+          <option key={a._id} value={a._id}>
+            {a.subject.code} - {a.subject.name}
           </option>
         ))}
       </select>
@@ -150,40 +131,56 @@ export default function IAEntryPage() {
         Load Students
       </button>
 
-      {loading && <p>Loading students...</p>}
+      {loading && <p>Loading...</p>}
 
-      {/* IA Max Marks */}
-      {maxMarks !== null && (
-        <p className="mb-4 font-semibold">
-          IA Maximum Marks: <span className="text-blue-600">{maxMarks}</span>
-        </p>
-      )}
-
-      {/* Student Table */}
+      {/* Students Table */}
       {students.length > 0 && (
-        <div>
+        <>
           <table className="w-full border text-sm">
             <thead className="bg-gray-200">
               <tr>
                 <th className="border p-2">USN</th>
                 <th className="border p-2">Name</th>
-                <th className="border p-2">Final IA</th>
+                <th className="border p-2">Present</th>
+                <th className="border p-2">Total</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((stu) => (
-                <tr key={stu._id}>
-                  <td className="border p-2">{stu.registerNumber}</td>
-                  <td className="border p-2">{stu.name}</td>
+              {students.map((s) => (
+                <tr key={s._id}>
+                  <td className="border p-2">{s.registerNumber}</td>
+                  <td className="border p-2">{s.name}</td>
+
                   <td className="border p-2">
                     <input
                       type="number"
-                      className="w-24 border p-1 rounded"
-                      min="0"
-                      max={maxMarks}
-                      value={marks[stu._id]}
+                      className="w-20 p-1 border rounded"
+                      value={attendance[s._id]?.present || ""}
                       onChange={(e) =>
-                        handleMarkChange(stu._id, Number(e.target.value))
+                        setAttendance((prev) => ({
+                          ...prev,
+                          [s._id]: {
+                            ...prev[s._id],
+                            present: Number(e.target.value),
+                          },
+                        }))
+                      }
+                    />
+                  </td>
+
+                  <td className="border p-2">
+                    <input
+                      type="number"
+                      className="w-20 p-1 border rounded"
+                      value={attendance[s._id]?.total || ""}
+                      onChange={(e) =>
+                        setAttendance((prev) => ({
+                          ...prev,
+                          [s._id]: {
+                            ...prev[s._id],
+                            total: Number(e.target.value),
+                          },
+                        }))
                       }
                     />
                   </td>
@@ -193,12 +190,12 @@ export default function IAEntryPage() {
           </table>
 
           <button
-            onClick={submitIA}
+            onClick={submitAttendance}
             className="bg-green-600 text-white px-4 py-2 rounded mt-4"
           >
-            Submit for HOD Approval
+            Submit Attendance
           </button>
-        </div>
+        </>
       )}
     </div>
   );
