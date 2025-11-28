@@ -6,36 +6,20 @@ import Student from "../models/Student.js";
 
 export const getStudentFullIA = async (req, res) => {
   try {
-    console.log("========================================");
-    console.log("🔵 getStudentFullIA CALLED");
-
     // 1) Clerk ID from token
     const clerkId = req.user?.clerkId;
-    console.log("🔎 ClerkId from token:", clerkId);
 
     if (!clerkId) {
-      console.log("❌ No clerkId found inside req.user");
       return res.json([]);
     }
 
     // 2) Find Student in Student collection
     const student = await Student.findOne({ clerkId });
-    console.log("📌 Student lookup result:", student);
 
     if (!student) {
-      console.log("❌ Student not found in STUDENT collection");
       return res.json([]);
     }
 
-    console.log("✅ Student Mongo ID:", student._id.toString());
-    console.log("📘 Student details:", {
-      department: student.currentDepartment,
-      semester: student.semester,
-      section: student.section,
-    });
-
-    // 3) Fetch all subject allocations
-    // 3) Fetch allocations safely even if student.section is missing
     const allocationQuery = {
       department: student.currentDepartment,
       semester: student.semester,
@@ -53,12 +37,6 @@ export const getStudentFullIA = async (req, res) => {
       "subject"
     );
 
-    console.log("📚 Allocations found:", allocations.length);
-
-    allocations.forEach((a) =>
-      console.log("➡ Allocation:", a._id.toString(), a.subject?.name)
-    );
-
     const allocationIds = allocations.map((a) => a._id);
 
     // 4) Fetch final IA for student
@@ -67,16 +45,6 @@ export const getStudentFullIA = async (req, res) => {
       subjectAllocation: { $in: allocationIds },
     });
 
-    console.log("🟢 Final IA records found:", finalIA.length);
-    finalIA.forEach((i) =>
-      console.log(
-        "   ✔ IA:",
-        i.subjectAllocation?.toString(),
-        "Marks:",
-        i.finalIA
-      )
-    );
-
     // 5) Fetch pending IA
     const pendingIA = await PendingIA.find({
       studentId: student._id,
@@ -84,17 +52,6 @@ export const getStudentFullIA = async (req, res) => {
       status: "Pending",
     });
 
-    console.log("🟡 Pending IA records found:", pendingIA.length);
-    pendingIA.forEach((i) =>
-      console.log(
-        "   ⏳ Pending:",
-        i.subjectAllocation?.toString(),
-        "Marks:",
-        i.finalIA
-      )
-    );
-
-    // 6) Build output result
     const result = allocations.map((alloc) => {
       const approved = finalIA.find(
         (i) => i.subjectAllocation.toString() === alloc._id.toString()
@@ -118,9 +75,6 @@ export const getStudentFullIA = async (req, res) => {
       };
     });
 
-    console.log("📤 FINAL RESPONSE:", result);
-
-    console.log("========================================\n");
     res.json(result);
   } catch (err) {
     console.log("❌ ERROR in getStudentFullIA:", err);
@@ -273,13 +227,9 @@ export const rejectIA = async (req, res) => {
 
 export const getStudentIA = async (req, res) => {
   try {
-    console.log("AUTH USER:", req.user); // DEBUG
-
     const clerkId = req.user.clerkId;
-    console.log("Clerk ID from token:", clerkId); // DEBUG
 
     const student = await Student.findOne({ clerkId });
-    console.log("Mongo student found:", student); // DEBUG
 
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
@@ -291,8 +241,6 @@ export const getStudentIA = async (req, res) => {
         populate: { path: "subject", select: "code name" },
       })
       .lean();
-
-    console.log("IA records fetched:", ia); // DEBUG
 
     res.json(ia);
   } catch (err) {

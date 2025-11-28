@@ -10,13 +10,10 @@ import mongoose from "mongoose";
  ***************************************/
 export const submitAttendance = async (req, res) => {
   try {
-    console.log("\n========== STAFF SUBMIT ATTENDANCE ==========");
 
     const { subjectAllocationId, attendance } = req.body;
     const submittedBy = req.user._id;
 
-    console.log("📌 Allocation ID:", subjectAllocationId);
-    console.log("📌 Attendance payload:", attendance);
 
     const alloc = await SubjectAllocation.findById(
       subjectAllocationId
@@ -24,7 +21,6 @@ export const submitAttendance = async (req, res) => {
     if (!alloc)
       return res.status(404).json({ message: "Invalid subject allocation" });
 
-    console.log("📘 Allocation found:", alloc.subject.name);
 
     // Process each student record
     for (const [studentId, rec] of Object.entries(attendance)) {
@@ -38,7 +34,6 @@ export const submitAttendance = async (req, res) => {
       const percentage = (present / total) * 100;
       const isEligible = percentage >= 75;
 
-      console.log(`➡ Saving pending attendance for student ${studentId}`);
 
       await PendingAttendance.findOneAndUpdate(
         { subjectAllocation: subjectAllocationId, studentId },
@@ -68,8 +63,6 @@ export const getPendingAttendance = async (req, res) => {
   try {
     const { allocationId } = req.params;
 
-    console.log("\n========== HOD PENDING ATTENDANCE ==========");
-    console.log("📘 Allocation:", allocationId);
 
     const pending = await PendingAttendance.find({
       subjectAllocation: allocationId,
@@ -90,7 +83,6 @@ export const approveAttendance = async (req, res) => {
   try {
     const { pendingId } = req.params;
 
-    console.log("\n========== HOD APPROVE ATTENDANCE ==========");
 
     const p = await PendingAttendance.findById(pendingId);
     if (!p)
@@ -125,15 +117,12 @@ export const approveAttendance = async (req, res) => {
  ***************************************/
 export const getStudentAttendance = async (req, res) => {
   try {
-    console.log("\n========== STUDENT ATTENDANCE VIEW ==========");
 
     const clerkId = req.user.clerkId;
-    console.log("🔎 Clerk ID:", clerkId);
 
     const student = await Student.findOne({ clerkId });
     if (!student) return res.json([]);
 
-    console.log("📌 Student MongoID:", student._id.toString());
 
     // Get subjects for semester + dept + section
     const query = {

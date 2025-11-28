@@ -1,5 +1,6 @@
 // src/middlewares/authMiddleware.js
 import { getAuth, clerkClient } from "@clerk/express";
+import User from "../models/User.js";
 
 export const authenticateUser = async (req, res, next) => {
   try {
@@ -22,7 +23,8 @@ export const authenticateUser = async (req, res, next) => {
       role: user.publicMetadata?.role || null,
       department: user.publicMetadata?.department || null,
     };
-
+    const local = await User.findOne({ clerkId: req.user.clerkId });
+    if (local) req.userMongoId = local._id.toString();
     next();
   } catch (error) {
     console.error("Auth Middleware Error:", error);

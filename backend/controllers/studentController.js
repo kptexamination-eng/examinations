@@ -338,7 +338,8 @@ export const createStudent = async (req, res) => {
       currentDepartment,
       semester,
       batch,
-      fatherName,motherName,
+      fatherName,
+      motherName,
       gender,
       category,
       admissionType,
@@ -455,7 +456,7 @@ export const getStudents = async (req, res) => {
 
     let students;
 
-    if (role === "Admin") {
+    if (role === "Admin" && role === "OfficeFee") {
       students = await Student.find().sort({ createdAt: -1 });
     } else if (role === "HOD" || role === "Staff") {
       if (dept === "SC") {

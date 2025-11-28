@@ -1,4 +1,3 @@
-// models/User.js
 import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
@@ -9,6 +8,7 @@ const userSchema = new Schema(
     email: { type: String, lowercase: true, trim: true, index: true },
     phone: { type: String, trim: true },
     name: { type: String, required: true, trim: true },
+
     role: {
       type: String,
       enum: [
@@ -28,34 +28,40 @@ const userSchema = new Schema(
       ],
       default: "Student",
     },
+
     department: {
       type: String,
-      enum: [
-        "AT", // Automobile Engineering
-        "CH", // Chemical Engineering
-        "CE", // Civil Engineering
-        "CS", // Computer Science Engineering
-        "EC", // Electronics & Communication
-        "EEE", // Electrical & Electronics
-        "ME", // Mechanical
-        "PO", // Polymer
-        "SC", // Science & English
-        "EN", // allow empty (e.g. for Admins with no dept)
-        "OT",
-      ],
+      enum: ["AT", "CH", "CE", "CS", "EC", "EEE", "ME", "PO", "SC", "EN", "OT"],
       default: "",
     },
-    imageUrl: {
-      type: String,
-    },
 
-    // Optional: store Cloudinary public_id for easy image replacement
-    imagePublicId: {
-      type: String,
-    },
+    imageUrl: String,
+    imagePublicId: String,
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export default model("User", userSchema);
+// ⬇ DEFINE MODEL FIRST
+const User = model("User", userSchema);
+
+// ⬇ THEN DEFINE UTILITY USING THE MODEL
+export const resolveUserId = async (req, explicitMongoId = null) => {
+  // Case 1: caller passes a Mongo _id (24 chars)
+  if (explicitMongoId && explicitMongoId.length === 24) {
+    return explicitMongoId;
+  }
+
+  // Case 2: logged-in staff via Clerk
+  if (req.user?.clerkId) {
+    const u = await User.findOne({ clerkId: req.user.clerkId, isActive: true });
+    if (!u) {
+      throw new Error("No local User found for this Clerk account");
+    }
+    return u._id.toString();
+  }
+
+  throw new Error("Unable to resolve user id (no mongoId or Clerk id)");
+};
+
+export default User;

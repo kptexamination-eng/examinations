@@ -14,6 +14,8 @@ import regNumGenRoutes from "./routes/regNumGenRoutes.js";
 import iaRoutes from "./routes/iaRoutes.js";
 import subjectAllocationRoutes from "./routes/subjectAllocationRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import questionPaperRoutes from "./routes/questionPaperRoutes.js";
+import hallTicketRoutes from "./routes/hallTicketRoutes.js";
 
 import subjectRoutes from "./routes/subjectRoutes.js";
 
@@ -59,8 +61,10 @@ app.use("/api/subjects", subjectRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/regnum", regNumGenRoutes);
 app.use("/api/ia", iaRoutes);
+app.use("/api/qps", questionPaperRoutes);
 app.use("/api/subject-allocations", subjectAllocationRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/halltickets", hallTicketRoutes);
 
 // ------------------------------
 // ❌ Error Handler (MUST be last)
