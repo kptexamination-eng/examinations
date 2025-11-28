@@ -22,14 +22,18 @@ const departments = [
 ];
 
 const roles = [
-  "HOD",
   "Admin",
   "Principal",
   "Registrar",
   "COE",
   "AssistantCOE",
   "ChairmanOfExams",
+  "HOD",
   "Staff",
+  "OfficeAdmissions",
+  "OfficeExam",
+  "OfficeFee",
+  "MarkEntryCaseWorker",
   "Student",
 ];
 

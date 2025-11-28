@@ -51,11 +51,21 @@ export default function coeLayout({ children }) {
       href: "/coe/regNumGen",
       icon: <UserCheck className="w-5 h-5" />,
     },
-    // {
-    //   label: "TimeTable Addition",
-    //   href: "/coe/addTimetable",
-    //   icon: <ClipboardCheck className="w-5 h-5" />,
-    // },
+    {
+      label: "Assign QP Setters",
+      href: "/coe/assignQPSetters",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
+    {
+      label: "Locked QPs",
+      href: "/coe/lockedQPs",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
+    {
+      label: "Subject List",
+      href: "/coe/subjectsList",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
   ];
 
   return (

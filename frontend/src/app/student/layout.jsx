@@ -51,11 +51,11 @@ export default function AdminLayout({ children }) {
       href: "/student/myIA",
       icon: <UserCheck className="w-5 h-5" />,
     },
-    // {
-    //   label: "TimeTable Addition",
-    //   href: "/admin/addTimetable",
-    //   icon: <ClipboardCheck className="w-5 h-5" />,
-    // },
+    {
+      label: "Exam Fee Status",
+      href: "/student/FeeStatus",
+      icon: <ClipboardCheck className="w-5 h-5" />,
+    },
   ];
 
   return (

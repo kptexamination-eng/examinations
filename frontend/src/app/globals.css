@@ -55,3 +55,21 @@
 [data-sonner-toaster] {
   z-index: 99999 !important;
 }
+@media print {
+  body {
+    background: white !important;
+  }
+
+  button,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:border-none {
+    border: none !important;
+  }
+
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+}

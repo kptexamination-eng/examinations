@@ -36,70 +36,73 @@ export default function HODLayout({ children }) {
     {
       label: "Profile",
       href: "/hod/myProfile",
-      icon: <LayoutDashboard className="w-5 h-5" />,
+      icon: <LayoutDashboard size={20} />,
+    },
+    {
+      label: "Hall Ticket Generation",
+      href: "/hod/halltickets",
+      icon: <FileSpreadsheet size={20} />,
     },
     {
       label: "Assign Subjects to Staff",
       href: "/hod/staffSubAllocation",
-      icon: <UserPlus className="w-5 h-5" />,
+      icon: <Users size={20} />,
     },
     {
       label: "Manage Subjects to Staff",
       href: "/hod/HODManageAllocations",
-      icon: <UserPlus className="w-5 h-5" />,
+      icon: <CheckSquare size={20} />,
     },
-    {
-      label: "Add Staff",
-      href: "/hod/addStaff",
-      icon: <UserPlus className="w-5 h-5" />,
-    },
+    { label: "Add Staff", href: "/hod/addStaff", icon: <UserPlus size={20} /> },
     {
       label: "Add Subject",
       href: "/hod/addSubject",
-      icon: <BookOpen className="w-5 h-5" />,
+      icon: <BookOpen size={20} />,
     },
     {
       label: "Subject List",
       href: "/hod/subjectTable",
-      icon: <BookOpen className="w-5 h-5" />,
+      icon: <BookOpen size={20} />,
     },
-
     {
       label: "Add Student",
       href: "/hod/addStudent",
-      icon: <Users className="w-5 h-5" />,
+      icon: <UserPlus size={20} />,
     },
     {
       label: "Student List",
       href: "/hod/studentTable",
-      icon: <BookOpen className="w-5 h-5" />,
+      icon: <Users size={20} />,
     },
-
     {
       label: "Student Edited Profile Approval",
       href: "/hod/studProfileEditApproval",
-      icon: <BookOpen className="w-5 h-5" />,
+      icon: <CheckSquare size={20} />,
     },
     {
       label: "Approve Attendance",
       href: "/hod/HODAttendanceApproval",
-      icon: <CheckSquare className="w-5 h-5" />,
+      icon: <CheckSquare size={20} />,
     },
     {
       label: "Download Attendance",
       href: "/hod/HODAttendanceDownload",
-      icon: <CheckSquare className="w-5 h-5" />,
+      icon: <FileSpreadsheet size={20} />,
     },
-   
     {
       label: "Approve IA Marks",
       href: "/hod/iaApproval",
-      icon: <FileSpreadsheet className="w-5 h-5" />,
+      icon: <FileSpreadsheet size={20} />,
     },
     {
       label: "IA Eligibility Download",
       href: "/hod/iaEligibilitydownload",
-      icon: <FileSpreadsheet className="w-5 h-5" />,
+      icon: <FileSpreadsheet size={20} />,
+    },
+    {
+      label: "Scrutinise Question Paper",
+      href: "/hod/QPScrutinyEditor",
+      icon: <BookOpen size={20} />,
     },
   ];
 
@@ -108,28 +111,36 @@ export default function HODLayout({ children }) {
       {/* Sidebar */}
       <aside className="w-64 bg-white shadow-xl border-r flex flex-col">
         {/* Logo Area */}
-        <div className="h-17 flex items-center px-6 border-b bg-gradient-to-r from-purple-600 to-purple-800">
-          <h1 className="text-xl font-semibold text-white">HOD Panel</h1>
+        <div className="h-17 flex items-center px-6 border-b bg-gradient-to-r from-[#5a3fff] to-[#8e4dff]">
+          <h1 className="text-xl font-semibold text-white tracking-wide">
+            HOD Panel
+          </h1>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {nav.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
-                  ${
-                    active
-                      ? "bg-purple-600 text-white shadow-md"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }
-                `}
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
+            ${
+              active
+                ? "bg-gradient-to-r from-[#6f4bff] to-[#b064ff] text-white shadow-lg scale-[1.02]"
+                : "text-gray-700 hover:bg-gray-100"
+            }
+          `}
               >
-                {item.icon}
-                {item.label}
+                <span
+                  className={`transition-transform group-hover:scale-110 ${
+                    active ? "text-white" : "text-purple-600"
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
               </Link>
             );
           })}

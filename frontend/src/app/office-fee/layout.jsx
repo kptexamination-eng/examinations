@@ -18,7 +18,7 @@ export default function AdminLayout({ children }) {
   if (!isSignedIn) return <RedirectToSignIn />;
 
   // Allowed admin-level roles
-  const allowed = ["Admin", "Principal", "Registrar"];
+  const allowed = ["OfficeFee"];
   if (!allowed.includes(user?.publicMetadata?.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50 text-red-700">
@@ -32,25 +32,15 @@ export default function AdminLayout({ children }) {
 
   const nav = [
     {
-      label: "Dashboard",
-      href: "/admin",
+      label: "Profile",
+      href: "/office-fee/myProfile",
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
-      label: "Members List",
-      href: "/admin/membersList",
+      label: "Update Fee Status",
+      href: "/office-fee/OfficeFeeDashboard",
       icon: <Files className="w-5 h-5" />,
     },
-    {
-      label: "HOD Addition",
-      href: "/admin/addHOD",
-      icon: <UserCheck className="w-5 h-5" />,
-    },
-    // {
-    //   label: "TimeTable Addition",
-    //   href: "/admin/addTimetable",
-    //   icon: <ClipboardCheck className="w-5 h-5" />,
-    // },
   ];
 
   return (
