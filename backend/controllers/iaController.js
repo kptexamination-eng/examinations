@@ -88,13 +88,23 @@ export const getStudentFullIA = async (req, res) => {
 export const getPendingIABySubject = async (req, res) => {
   try {
     const { subjectId } = req.params;
-
+    console.log("am here now-----------------");
     // 1) Find which allocations exist for this subject
     const allocations = await SubjectAllocation.find({ subject: subjectId });
 
     if (allocations.length === 0) return res.json([]);
 
     const allocationIds = allocations.map((a) => a._id);
+
+    const raw = await PendingIA.find({
+      subjectAllocation: { $in: allocationIds },
+      status: "Pending",
+    });
+
+    console.log("RAW DB VALUE:", raw[0].studentId);
+    console.log("RAW DB VALUE:", raw[1].studentId);
+    console.log("RAW DB VALUE:", raw[2].studentId);
+    console.log("RAW DB VALUE:", raw[3].studentId);
 
     // 2) Load pending IA records
     const pending = await PendingIA.find({
@@ -103,13 +113,14 @@ export const getPendingIABySubject = async (req, res) => {
     })
       .populate({
         path: "studentId",
-        select: "registerNumber name clerkId",
+        select: "registerNumber imageUrl name clerkId",
+        strictPopulate: false,
       })
       .populate({
         path: "subjectAllocation",
         populate: { path: "staff", select: "name" },
       });
-
+    // console.log(pending);
     res.json(pending);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -135,18 +146,19 @@ export const submitPendingIA = async (req, res) => {
 
     // `marks = { studentMongoId: finalIA }`
     for (const [studentId, finalIA] of Object.entries(marks)) {
-      if (!mongoose.isValidObjectId(studentId)) continue;
+      const sid = new mongoose.Types.ObjectId(studentId);
 
       const isEligible = finalIA >= 0.4 * maxMarks;
 
       await PendingIA.findOneAndUpdate(
-        { subjectAllocation: subjectAllocationId, studentId },
+        { subjectAllocation: subjectAllocationId, studentId: sid },
         {
           finalIA,
           maxMarks,
           isEligible,
           submittedBy,
           status: "Pending",
+          studentId: sid,
         },
         { upsert: true, new: true }
       );
@@ -164,12 +176,10 @@ export const submitPendingIA = async (req, res) => {
 export const getPendingIA = async (req, res) => {
   try {
     const { allocationId } = req.params;
-
     const pending = await PendingIA.find({
       subjectAllocation: allocationId,
       status: "Pending",
     }).populate("studentId");
-
     res.json(pending);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -259,9 +269,11 @@ export const getFinalIA = async (req, res) => {
     const records = await IA.find({
       subjectAllocation: allocationId,
     })
-      .populate("studentId", "name registerNumber clerkId")
+      .populate(
+        "studentId",
+        "name registerNumber imageUrl semester phone  clerkId"
+      )
       .lean();
-
     res.json(records);
   } catch (err) {
     res.status(500).json({ message: err.message });

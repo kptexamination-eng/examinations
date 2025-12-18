@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { Search, Upload, X } from "lucide-react";
 import LoaderOverlay from "../../components/LoaderOverlay";
 
 const departments = [
@@ -52,6 +52,7 @@ export default function AdminStaffList() {
   // Edit state
   const [editingId, setEditingId] = useState(null);
   const [action, setAction] = useState(null);
+
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
@@ -60,7 +61,10 @@ export default function AdminStaffList() {
     role: "",
   });
 
-  // Fetch ALL members
+  // NEW → store selected image file + preview
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -71,10 +75,8 @@ export default function AdminStaffList() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // API returns { success, data }
       setUsers(res.data.data || []);
     } catch (err) {
-      console.error("Error fetching users:", err);
       toast.error("❌ Failed to fetch users");
     } finally {
       setLoading(false);
@@ -85,7 +87,6 @@ export default function AdminStaffList() {
     fetchUsers();
   }, []);
 
-  // FILTERING LOGIC
   const filtered = users.filter((u) => {
     const matchSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -108,11 +109,15 @@ export default function AdminStaffList() {
       department: u.department,
       role: u.role,
     });
+
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
-  // Cancel editing
   const cancelEdit = () => {
     setEditingId(null);
+    setSelectedImage(null);
+    setImagePreview(null);
     setEditForm({
       name: "",
       email: "",
@@ -122,20 +127,57 @@ export default function AdminStaffList() {
     });
   };
 
-  // Update user
+  // Handle image select
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only images allowed");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Max size is 2MB");
+      return;
+    }
+
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  // Update
   const handleUpdate = async (id) => {
     try {
       setAction("updating");
       const token = await getToken();
 
+      const formData = new FormData();
+      for (const key in editForm) {
+        formData.append(key, editForm[key]);
+      }
+
+      // Attach image if selected
+      if (selectedImage) {
+        formData.append("image", selectedImage);
+      }
+
       const res = await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/updateuser/${id}`,
-        editForm,
-        { headers: { Authorization: `Bearer ${token}` } }
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       toast.success("Updated successfully");
+
+      // Update UI
       setUsers(users.map((u) => (u._id === id ? res.data.data : u)));
+
       cancelEdit();
     } catch (err) {
       toast.error("Failed to update");
@@ -144,7 +186,6 @@ export default function AdminStaffList() {
     }
   };
 
-  // Delete user
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete?")) return;
 
@@ -176,9 +217,8 @@ export default function AdminStaffList() {
 
       <h2 className="text-2xl font-semibold mb-5">All Members</h2>
 
-      {/* FILTER BAR */}
+      {/* FILTERS */}
       <div className="flex flex-col md:flex-row gap-3 mb-5 md:items-center md:justify-between">
-        {/* Search */}
         <div className="relative w-full md:w-1/2">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
           <input
@@ -189,7 +229,6 @@ export default function AdminStaffList() {
           />
         </div>
 
-        {/* Role Filter */}
         <select
           className="border px-3 py-2 rounded-lg"
           value={filterRole}
@@ -205,7 +244,6 @@ export default function AdminStaffList() {
             ))}
         </select>
 
-        {/* Department Filter */}
         <select
           className="border px-3 py-2 rounded-lg"
           value={filterDept}
@@ -245,10 +283,45 @@ export default function AdminStaffList() {
                 <td className="p-2 text-center">{i + 1}</td>
 
                 <td className="p-2">
-                  <img
-                    src={u.imageUrl || "/default-avatar.png"}
-                    className="w-10 h-10 rounded-full border object-cover"
-                  />
+                  {/* Show preview if editing */}
+                  {editingId === u._id ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img
+                        src={
+                          imagePreview || u.imageUrl || "/default-avatar.png"
+                        }
+                        className="w-14 h-14 rounded-full border object-cover"
+                      />
+
+                      <label className="flex items-center gap-2 cursor-pointer text-blue-600 text-sm">
+                        <Upload size={16} />
+                        Change
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                        />
+                      </label>
+
+                      {imagePreview && (
+                        <button
+                          className="text-red-600 text-xs flex items-center gap-1"
+                          onClick={() => {
+                            setSelectedImage(null);
+                            setImagePreview(null);
+                          }}
+                        >
+                          <X size={14} /> Remove
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <img
+                      src={u.imageUrl || "/default-avatar.png"}
+                      className="w-12 h-12 rounded-full border object-cover"
+                    />
+                  )}
                 </td>
 
                 {/* NAME */}
@@ -299,7 +372,7 @@ export default function AdminStaffList() {
                   )}
                 </td>
 
-                {/* DEPT */}
+                {/* DEPARTMENT */}
                 <td className="p-2 uppercase">
                   {editingId === u._id ? (
                     <select
@@ -347,7 +420,7 @@ export default function AdminStaffList() {
                   )}
                 </td>
 
-                {/* ACTIONS */}
+                {/* ACTION BUTTONS */}
                 <td className="p-2 flex gap-2">
                   {editingId === u._id ? (
                     <>

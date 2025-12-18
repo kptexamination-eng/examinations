@@ -5,7 +5,6 @@ import User from "../models/User.js";
 export const authenticateUser = async (req, res, next) => {
   try {
     const { userId } = getAuth(req); // Clerk verifies JWT here
-
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized. No userId found." });
     }

@@ -4,12 +4,11 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Upload, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import HODTable from "./HODTable";
 import LoaderOverlay from "../../components/LoaderOverlay";
 
 const departments = [
-  { value: "", label: "All Departments" },
   { value: "AT", label: "Automobile Engineering" },
   { value: "CH", label: "Chemical Engineering" },
   { value: "CE", label: "Civil Engineering" },
@@ -19,6 +18,7 @@ const departments = [
   { value: "ME", label: "Mechanical Engineering" },
   { value: "PO", label: "Polymer Engineering" },
   { value: "SC", label: "Science and English" },
+  { value: "OT", label: "Office / Others" },
 ];
 
 const roles = [

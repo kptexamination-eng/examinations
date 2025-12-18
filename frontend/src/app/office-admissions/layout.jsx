@@ -3,28 +3,27 @@
 import { useUser, RedirectToSignIn, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Files,
-  UserCheck,
-  ClipboardCheck,
-} from "lucide-react";
+import { LayoutDashboard, Files, UserCheck } from "lucide-react";
 
-export default function AdminLayout({ children }) {
+export default function AdmissionsLayout({ children }) {
   const { isLoaded, isSignedIn, user } = useUser();
   const pathname = usePathname();
 
   if (!isLoaded) return <div>Loading...</div>;
   if (!isSignedIn) return <RedirectToSignIn />;
 
-  // Allowed admin-level roles
-  const allowed = ["Admin", "Principal", "Registrar"];
-  if (!allowed.includes(user?.publicMetadata?.role)) {
+  // ✅ ONLY Office Admissions role allowed
+  const allowedRoles = ["OfficeAdmissions"];
+  const userRole = user?.publicMetadata?.role;
+
+  if (!allowedRoles.includes(userRole)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-red-50 text-red-700">
-        <div className="p-6 bg-white rounded-lg shadow">
-          <p className="text-xl font-semibold">🚫 Access Denied</p>
-          <p>You are not allowed to access the admin panel.</p>
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="p-6 bg-white rounded-lg shadow text-center">
+          <p className="text-xl font-semibold text-red-700">🚫 Access Denied</p>
+          <p className="text-gray-600 mt-2">
+            This portal is restricted to Admissions Office staff only.
+          </p>
         </div>
       </div>
     );
@@ -32,34 +31,31 @@ export default function AdminLayout({ children }) {
 
   const nav = [
     {
-      label: "Dashboard",
-      href: "/admin",
+      label: "Admissions Dashboard",
+      href: "/office-admissions",
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
       label: "Members List",
-      href: "/admin/membersList",
+      href: "/office-admissions/membersList",
       icon: <Files className="w-5 h-5" />,
     },
     {
-      label: "HOD Addition",
-      href: "/admin/addHOD",
+      label: "HOD Assignment",
+      href: "/office-admissions/addHOD",
       icon: <UserCheck className="w-5 h-5" />,
     },
-    // {
-    //   label: "TimeTable Addition",
-    //   href: "/admin/addTimetable",
-    //   icon: <ClipboardCheck className="w-5 h-5" />,
-    // },
   ];
 
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-white shadow-xl border-r flex flex-col">
-        {/* Logo Area */}
-        <div className="h-17 flex items-center px-6 border-b bg-gradient-to-r from-blue-600 to-blue-800">
-          <h1 className="text-xl font-semibold text-white">KPT Admin</h1>
+        {/* Header */}
+        <div className="h-16 flex items-center px-6 border-b bg-gradient-to-r from-blue-600 to-blue-800">
+          <h1 className="text-lg font-semibold text-white">
+            Admissions Office
+          </h1>
         </div>
 
         {/* Navigation */}
@@ -85,10 +81,11 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        {/* Sidebar Footer */}
+        {/* Footer */}
         <div className="p-4 border-t bg-gray-50 text-gray-600 text-sm">
-          Signed in as <br />
-          <span className="font-medium">{user?.firstName}</span>
+          Signed in as
+          <div className="font-medium">{user?.firstName}</div>
+          <div className="text-xs text-gray-500">{userRole}</div>
         </div>
       </aside>
 
@@ -97,7 +94,7 @@ export default function AdminLayout({ children }) {
         {/* Top Bar */}
         <header className="h-16 bg-white shadow-sm px-8 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">
-            Admin Dashboard
+            Admissions Dashboard
           </h2>
 
           <div className="flex items-center gap-4">
@@ -108,12 +105,11 @@ export default function AdminLayout({ children }) {
               Home
             </Link>
 
-            {/* Clerk Profile / Settings / Logout */}
             <UserButton afterSignOutUrl="/" />
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Content */}
         <main className="p-8">{children}</main>
       </div>
     </div>

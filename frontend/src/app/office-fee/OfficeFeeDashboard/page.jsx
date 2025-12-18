@@ -7,84 +7,56 @@ import { useAuth } from "@clerk/nextjs";
 export default function OfficeFeeDashboard() {
   const { getToken } = useAuth();
 
-  const [department, setDepartment] = useState("CS");
   const [semester, setSemester] = useState(1);
-  const [section, setSection] = useState("");
-
   const [students, setStudents] = useState([]);
-  const [feeStatus, setFeeStatus] = useState({}); // { studentId: "Paid" }
+  const [selected, setSelected] = useState(null);
+  const [amount, setAmount] = useState("");
 
   const loadStudents = async () => {
     const token = await getToken();
 
     const res = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/students/getstudents?department=${department}&semester=${semester}&section=${section}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/students/getstudents?semester=${semester}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    const list = res.data.data || [];
-
-    setStudents(list);
-
-    const statusObj = {};
-    list.forEach((stu) => {
-      statusObj[stu._id] = "Not Paid"; // default
-    });
-
-    setFeeStatus(statusObj);
+    setStudents(res.data.data || []);
   };
 
-  const updateFee = async (studentId) => {
+  const payFee = async () => {
     const token = await getToken();
 
     await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/fees/update`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/fees/pay/${selected.studentId}`,
       {
-        studentId,
         semester,
-        status: feeStatus[studentId],
+        amountPaid: Number(amount),
+        paymentMode: "CASH",
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    alert("Fee updated!");
+    alert("Payment successful");
+    setSelected(null);
+    setAmount("");
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">Office Fee Entry</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Office Fee Dashboard</h1>
 
-      {/* FILTERS */}
       <div className="flex gap-4 mb-4">
         <select
-          className="border p-2"
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-        >
-          <option value="CS">CS</option>
-          <option value="ME">ME</option>
-          <option value="EC">EC</option>
-          <option value="EEE">EEE</option>
-        </select>
-
-        <select
-          className="border p-2"
           value={semester}
           onChange={(e) => setSemester(e.target.value)}
+          className="border p-2"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+          {[1, 2, 3, 4, 5, 6].map((s) => (
             <option key={s} value={s}>
-              Sem {s}
+              Semester {s}
             </option>
           ))}
         </select>
-
-        <input
-          placeholder="Section"
-          className="border p-2"
-          value={section}
-          onChange={(e) => setSection(e.target.value)}
-        />
 
         <button
           onClick={loadStudents}
@@ -94,65 +66,63 @@ export default function OfficeFeeDashboard() {
         </button>
       </div>
 
-      {/* STUDENT LIST */}
-      {students.length > 0 && (
-        <table className="w-full border text-sm">
-          <thead className="bg-gray-200">
-            <tr>
-              <th className="border p-2">Photo</th>
-              <th className="border p-2">USN</th>
-              <th className="border p-2">Name</th>
-              <th className="border p-2">Phone</th>
-              <th className="border p-2">Semester</th>
-              <th className="border p-2">Fee Status</th>
-              <th className="border p-2">Update</th>
+      <table className="w-full border text-sm">
+        <thead className="bg-gray-200">
+          <tr>
+            <th className="border p-2">USN</th>
+            <th className="border p-2">Name</th>
+            <th className="border p-2">Status</th>
+            <th className="border p-2">Pay</th>
+          </tr>
+        </thead>
+        <tbody>
+          {students.map((s) => (
+            <tr key={s._id}>
+              <td className="border p-2">{s.registerNumber}</td>
+              <td className="border p-2">{s.name}</td>
+              <td className="border p-2">{s.isPaid ? "Paid" : "Not Paid"}</td>
+              <td className="border p-2">
+                <button
+                  onClick={() => setSelected(s)}
+                  className="bg-green-600 text-white px-3 py-1 rounded"
+                >
+                  Pay
+                </button>
+              </td>
             </tr>
-          </thead>
+          ))}
+        </tbody>
+      </table>
 
-          <tbody>
-            {students.map((stu) => (
-              <tr key={stu._id}>
-                <td className="border p-2">
-                  <img
-                    src={stu.imageUrl}
-                    alt=""
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                </td>
+      {selected && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded w-80">
+            <h2 className="font-bold mb-2">Pay Exam Fee</h2>
 
-                <td className="border p-2">{stu.registerNumber}</td>
-                <td className="border p-2">{stu.name}</td>
-                <td className="border p-2">{stu.phone}</td>
-                <td className="border p-2">{stu.semester}</td>
+            <input
+              type="number"
+              placeholder="Amount"
+              className="border p-2 w-full mb-3"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
 
-                <td className="border p-2">
-                  <select
-                    className="border p-2"
-                    value={feeStatus[stu._id]}
-                    onChange={(e) =>
-                      setFeeStatus((prev) => ({
-                        ...prev,
-                        [stu._id]: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="Paid">Paid</option>
-                    <option value="Not Paid">Not Paid</option>
-                  </select>
-                </td>
-
-                <td className="border p-2">
-                  <button
-                    onClick={() => updateFee(stu._id)}
-                    className="bg-green-600 text-white px-3 py-1 rounded"
-                  >
-                    Save
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            <div className="flex justify-between">
+              <button
+                onClick={() => setSelected(null)}
+                className="px-3 py-1 border rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={payFee}
+                className="bg-blue-600 text-white px-4 py-1 rounded"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

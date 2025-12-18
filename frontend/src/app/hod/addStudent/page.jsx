@@ -6,7 +6,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Upload, Image as ImageIcon } from "lucide-react";
 import LoaderOverlay from "../../components/LoaderOverlay";
-import BulkUpload from "../addSubject/bulkupload/BulkUpload";
+import BulkUpload from "./bulkupload/BulkUpload";
 
 const departments = [
   { value: "AT", label: "Automobile Engineering" },

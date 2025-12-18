@@ -6,6 +6,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Pencil, Trash2, Check, X, Upload } from "lucide-react";
 import LoaderOverlay from "../../components/LoaderOverlay";
+import Swal from "sweetalert2";
 
 export default function StudentTable() {
   const { getToken } = useAuth();
@@ -18,6 +19,7 @@ export default function StudentTable() {
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   // Editing
   const [editingId, setEditingId] = useState(null);
@@ -193,6 +195,69 @@ export default function StudentTable() {
     }
   };
 
+  const bulkDeleteStudents = async () => {
+    if (selectedIds.size === 0) {
+      return Swal.fire("No selection", "Select students to delete.", "warning");
+    }
+
+    const result = await Swal.fire({
+      title: "Delete selected students?",
+      text: `${selectedIds.size} students will be permanently deleted.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Delete All",
+    });
+
+    if (!result.isConfirmed) return;
+
+    const ids = Array.from(selectedIds);
+
+    Swal.fire({
+      title: "Deleting students...",
+      html: `<strong>0 / ${ids.length}</strong> completed`,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    let completed = 0;
+
+    try {
+      const token = await getToken();
+
+      for (const id of ids) {
+        setAction("deleting-many");
+
+        try {
+          await axios.delete(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/students/deletestudent/${id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          // Update locally
+          setStudents((prev) => prev.filter((s) => s._id !== id));
+        } catch (err) {
+          console.error("Failed:", id, err);
+        }
+
+        completed++;
+        setAction(null);
+
+        // Update SweetAlert progress
+        Swal.update({
+          html: `<strong>${completed} / ${ids.length}</strong> completed`,
+        });
+      }
+
+      Swal.fire("Completed!", "Bulk delete finished.", "success");
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Bulk delete failed.", "error");
+    }
+  };
+
   /* -------------------------------------------------------
      DELETE STUDENT
      ------------------------------------------------------- */
@@ -221,7 +286,8 @@ export default function StudentTable() {
      ------------------------------------------------------- */
   return (
     <div className="mt-6 relative overflow-x-auto text-sm">
-      {action && <LoaderOverlay message="Processing..." />}
+      {action === "updating" && <LoaderOverlay message="Updating student..." />}
+      {action === "deleting" && <LoaderOverlay message="Deleting student..." />}
 
       <h2 className="text-lg font-semibold mb-3">Students List</h2>
 
@@ -245,6 +311,13 @@ export default function StudentTable() {
           <option value="3">3rd Year</option>
         </select>
       </div>
+      <button
+        onClick={bulkDeleteStudents}
+        disabled={selectedIds.size === 0}
+        className="px-3 py-1 bg-red-600 text-white rounded disabled:opacity-50"
+      >
+        Delete Selected ({selectedIds.size})
+      </button>
 
       {loading ? (
         <p className="text-gray-500">Loading...</p>
@@ -252,6 +325,23 @@ export default function StudentTable() {
         <table className="w-full border border-gray-200 rounded">
           <thead className="bg-gray-100">
             <tr>
+              <th className="p-2">
+                <input
+                  type="checkbox"
+                  onChange={(e) => {
+                    const newSet = new Set();
+                    if (e.target.checked) {
+                      paginated.forEach((s) => newSet.add(s._id));
+                    }
+                    setSelectedIds(newSet);
+                  }}
+                  checked={
+                    paginated.every((s) => selectedIds.has(s._id)) &&
+                    paginated.length > 0
+                  }
+                />
+              </th>
+
               <th className="p-2">Sl</th>
               <th className="p-2">Image</th>
               <th className="p-2">Reg No</th>
@@ -270,6 +360,18 @@ export default function StudentTable() {
           <tbody>
             {paginated.map((s, i) => (
               <tr key={s._id} className="border-t">
+                <td className="p-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(s._id)}
+                    onChange={() => {
+                      const newSet = new Set(selectedIds);
+                      if (newSet.has(s._id)) newSet.delete(s._id);
+                      else newSet.add(s._id);
+                      setSelectedIds(newSet);
+                    }}
+                  />
+                </td>
                 <td className="p-2">{(page - 1) * pageSize + i + 1}</td>
 
                 {/* IMAGE */}

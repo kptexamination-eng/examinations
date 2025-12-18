@@ -5,10 +5,18 @@ import {
   getSubjectById,
   updateSubject,
   deleteSubject,
+  bulkAddSubjects,
 } from "../controllers/subjectController.js";
 import { authenticateUser } from "../middleware/authMiddleware.js";
+import { requireRole } from "../middleware/requireRole.js";
 
 const router = express.Router();
+router.post(
+  "/bulkjson",
+  authenticateUser,
+  requireRole(["Admin", "HOD"]),
+  bulkAddSubjects
+);
 
 // Clerk-protected routes
 router.post("/addsubject", authenticateUser, createSubject);

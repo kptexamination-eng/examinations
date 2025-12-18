@@ -13,18 +13,32 @@ const FeeSchema = new mongoose.Schema(
       required: true,
     },
 
-    amount: Number,
-    paidAmount: Number,
-    balance: Number,
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+
+    paidAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    balance: {
+      type: Number,
+      default: 0,
+    },
 
     isPaid: {
       type: Boolean,
       default: false,
     },
-    paidOn: { type: Date, default: Date.now },
-    receiptUrl: String, // optional file upload
+
+    lastPaidOn: Date,
   },
   { timestamps: true }
 );
+
+// prevent duplicate fee records
+FeeSchema.index({ studentId: 1, semester: 1 }, { unique: true });
 
 export default mongoose.model("Fee", FeeSchema);

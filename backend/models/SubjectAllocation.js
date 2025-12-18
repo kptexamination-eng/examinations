@@ -39,7 +39,7 @@ const subjectAllocationSchema = new mongoose.Schema({
 });
 
 subjectAllocationSchema.index(
-  { subject: 1, semester: 1, section: 1 },
+  { subject: 1, department: 1, semester: 1, section: 1 },
   { unique: true }
 );
 

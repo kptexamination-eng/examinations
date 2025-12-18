@@ -16,7 +16,9 @@ import subjectAllocationRoutes from "./routes/subjectAllocationRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import hallTicketRoutes from "./routes/hallTicketRoutes.js";
+import clerkRoutes from "./routes/clerkRoutes.js";
 
+import feeRoutes from "./routes/feeRoutes.js";
 import subjectRoutes from "./routes/subjectRoutes.js";
 
 dotenv.config();
@@ -65,6 +67,8 @@ app.use("/api/qps", questionPaperRoutes);
 app.use("/api/subject-allocations", subjectAllocationRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/halltickets", hallTicketRoutes);
+app.use("/api/clerk", clerkRoutes);
+app.use("/api/fees", feeRoutes);
 
 // ------------------------------
 // ❌ Error Handler (MUST be last)

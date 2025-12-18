@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import LoaderOverlay from "../../components/LoaderOverlay";
+import BulkUploadSubjects from "./BulkUploadSubjects";
 
 const departments = [
   { value: "", label: "All Departments" },
@@ -94,6 +95,7 @@ export default function AddSubjectForm() {
     <section className="relative">
       {status === "saving" && <LoaderOverlay message="Adding subject..." />}
 
+      <BulkUploadSubjects />
       <h2 className="text-2xl font-semibold mb-4">Add Subject</h2>
 
       <form

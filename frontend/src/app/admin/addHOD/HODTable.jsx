@@ -16,20 +16,21 @@ export default function HODTable() {
   // fetch HODs + Admins
   const fetchUsers = async () => {
     try {
-      setLoading(true);
-      const token = await getToken();
+      const token = await getToken(); // ✅ REQUIRED
 
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/getusers`,
-        { headers:{ "x-clerk-auth-token": token }}
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ REQUIRED
+          },
+        }
       );
-
-      const list = res.data?.data || []; // safe fallback
-
-      setUsers(list.filter((u) => u.role === "HOD" || u.role === "Admin"));
+      console.log(res.data);
+      setUsers(res.data.data);
     } catch (err) {
       console.error("Error fetching users:", err);
-      toast.error("Failed to fetch users ❌");
+      toast.error("Unauthorized: Unable to fetch users");
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ export default function HODTable() {
       const token = await getToken();
       await axios.delete(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/deleteuser/${id}`,
-        { headers:{ "x-clerk-auth-token": token }}
+        { headers: { "x-clerk-auth-token": token } }
       );
       setUsers(users.filter((u) => u._id !== id));
       toast.success("✅ Member deleted successfully");

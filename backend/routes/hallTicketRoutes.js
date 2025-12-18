@@ -1,5 +1,8 @@
 import express from "express";
-import { printHallTicket } from "../controllers/hallTicketController.js";
+import {
+  printAllHallTickets,
+  printHallTicket,
+} from "../controllers/hallTicketController.js";
 import { authenticateUser } from "../middleware/authMiddleware.js";
 
 // simple role-checking middleware for HOD
@@ -21,6 +24,13 @@ router.get(
   authenticateUser,
   authorizeRoles("HOD", "Admin"),
   printHallTicket
+);
+
+router.get(
+  "/print-all",
+  authenticateUser,
+  authorizeRoles("HOD", "Admin"),
+  printAllHallTickets
 );
 
 export default router;

@@ -128,6 +128,22 @@ export default function HallTicketPrinter() {
       >
         {loading ? "Generating..." : "🖨️ Print Hall Ticket"}
       </button>
+
+      <button
+        onClick={() => {
+          if (!semester) {
+            alert("Select Semester");
+            return;
+          }
+
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/api/halltickets/print-all?department=${department}&semester=${semester}&examType=${examType}`;
+
+          window.open(url, "_blank", "noopener,noreferrer");
+        }}
+        className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full font-medium"
+      >
+        🖨️ Print ALL Hall Tickets (Merged PDF)
+      </button>
     </div>
   );
 }

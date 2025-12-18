@@ -14,6 +14,7 @@ export default function BulkUpload() {
   const [students, setStudents] = useState([]);
   const [fileName, setFileName] = useState("");
   const [loadingFile, setLoadingFile] = useState(false);
+  const [uploadResults, setUploadResults] = useState(null);
 
   const REQUIRED_FIELDS = [
     "name",
@@ -104,13 +105,19 @@ export default function BulkUpload() {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/students/bulk-add`,
         { students },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (res.data.success) toast.success("🎉 Bulk upload completed!");
-      else toast.error("Some rows failed. Please check logs.");
+      console.log("UPLOAD RESULT:", res.data);
+
+      // ⬇️ SAVE RESULTS TO FRONTEND
+      setUploadResults(res.data.results);
+
+      if (res.data.success) {
+        toast.success("🎉 Bulk upload completed!");
+      } else {
+        toast.error("Some rows failed. See detailed results below.");
+      }
 
       setStudents([]);
       setFileName("");
@@ -197,6 +204,57 @@ export default function BulkUpload() {
           "Upload Students"
         )}
       </button>
+      <div className="mt-6 text-sm text-gray-600 flex items-center gap-2">
+        <FileSpreadsheet className="w-5 h-5 text-green-600" />
+        Download template:
+        <a
+          href="/subjects_template.xlsx"
+          className="text-blue-600 underline font-medium"
+        >
+          students_template.xlsx
+        </a>
+      </div>
+
+      {uploadResults && (
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-300 shadow-sm">
+          <h3 className="text-lg font-semibold mb-3">Upload Summary</h3>
+          <div className="mb-3">
+            <span className="text-green-600 font-semibold">
+              Success: {uploadResults.filter((r) => r.success).length}
+            </span>
+            {" | "}
+            <span className="text-red-600 font-semibold">
+              Failed: {uploadResults.filter((r) => !r.success).length}
+            </span>
+          </div>
+
+          <table className="w-full text-sm border">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="p-2 border">Email</th>
+                <th className="p-2 border">Status</th>
+                <th className="p-2 border">Message</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {uploadResults.map((item, index) => (
+                <tr key={index} className="border-b">
+                  <td className="p-2 border">{item.email}</td>
+                  <td
+                    className={`p-2 border font-semibold ${
+                      item.success ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {item.success ? "Success" : "Failed"}
+                  </td>
+                  <td className="p-2 border">{item.message || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

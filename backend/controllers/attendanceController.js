@@ -5,24 +5,42 @@ import SubjectAllocation from "../models/SubjectAllocation.js";
 import Student from "../models/Student.js";
 import mongoose from "mongoose";
 
-/***************************************
- * STAFF: Submit Attendance
- ***************************************/
+export const getFinalAttendanceByAllocation = async (req, res) => {
+  try {
+    const { allocationId } = req.params;
+
+    const final = await Attendance.find({
+      subjectAllocation: allocationId,
+    }).populate("studentId");
+
+    res.json(final);
+  } catch (err) {
+    console.error("❌ ERROR getFinalAttendanceByAllocation:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const submitAttendance = async (req, res) => {
   try {
-
     const { subjectAllocationId, attendance } = req.body;
     const submittedBy = req.user._id;
 
-
-    const alloc = await SubjectAllocation.findById(
-      subjectAllocationId
-    ).populate("subject");
+    const alloc = await SubjectAllocation.findById(subjectAllocationId);
     if (!alloc)
       return res.status(404).json({ message: "Invalid subject allocation" });
 
+    // ============= NEW BLOCK: Prevent resubmission =============
+    const approvedExists = await Attendance.findOne({
+      subjectAllocation: subjectAllocationId,
+    });
 
-    // Process each student record
+    if (approvedExists) {
+      return res.status(400).json({
+        message: "Attendance already approved by HOD. You cannot submit again.",
+      });
+    }
+    // ============================================================
+
     for (const [studentId, rec] of Object.entries(attendance)) {
       if (!mongoose.isValidObjectId(studentId)) continue;
 
@@ -33,7 +51,6 @@ export const submitAttendance = async (req, res) => {
 
       const percentage = (present / total) * 100;
       const isEligible = percentage >= 75;
-
 
       await PendingAttendance.findOneAndUpdate(
         { subjectAllocation: subjectAllocationId, studentId },
@@ -63,7 +80,6 @@ export const getPendingAttendance = async (req, res) => {
   try {
     const { allocationId } = req.params;
 
-
     const pending = await PendingAttendance.find({
       subjectAllocation: allocationId,
       status: "Pending",
@@ -82,7 +98,6 @@ export const getPendingAttendance = async (req, res) => {
 export const approveAttendance = async (req, res) => {
   try {
     const { pendingId } = req.params;
-
 
     const p = await PendingAttendance.findById(pendingId);
     if (!p)
@@ -117,12 +132,10 @@ export const approveAttendance = async (req, res) => {
  ***************************************/
 export const getStudentAttendance = async (req, res) => {
   try {
-
     const clerkId = req.user.clerkId;
 
     const student = await Student.findOne({ clerkId });
     if (!student) return res.json([]);
-
 
     // Get subjects for semester + dept + section
     const query = {

@@ -1,19 +1,30 @@
 import express from "express";
 import {
-  createFeeRecord,
-  updateFeeStatus,
-  getStudentFeeStatus,
-} from "../controllers/feeController.js";
+  initializeExamFee,
+  payExamFee,
+  getMyFees,
+  getStudentFees,
+  getFeeTransactions,
+  downloadReceipt,
+} from "../controllers/FeeController.js";
 
 import { authenticateUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// OfficeFee user updates fee
-router.post("/create", authenticateUser, createFeeRecord);
-router.post("/update/:studentId", authenticateUser, updateFeeStatus);
+router.get("/receipt/:txnId", authenticateUser, downloadReceipt);
 
-// Student view
-router.get("/student/my", authenticateUser, getStudentFeeStatus);
+/* Admin / COE */
+router.post("/init", authenticateUser, initializeExamFee);
+
+/* Office Fee */
+router.post("/pay/:studentId", authenticateUser, payExamFee);
+
+/* Student */
+router.get("/my", authenticateUser, getMyFees);
+
+/* Office / Admin */
+router.get("/student/:studentId", authenticateUser, getStudentFees);
+router.get("/transactions/:feeId", authenticateUser, getFeeTransactions);
 
 export default router;

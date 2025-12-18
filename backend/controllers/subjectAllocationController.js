@@ -39,13 +39,15 @@ export const createSubjectAllocation = async (req, res) => {
 
     const exists = await SubjectAllocation.findOne({
       subject: subjectId,
+      department,
       semester,
       section,
     });
 
     if (exists)
       return res.status(400).json({
-        message: "Subject already allocated for this semester & section.",
+        message:
+          "Subject already allocated for this department, semester & section.",
       });
 
     const allocation = await SubjectAllocation.create({

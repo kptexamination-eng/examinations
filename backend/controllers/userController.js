@@ -330,28 +330,58 @@ export const updateUser = async (req, res) => {
       updateData.department = normalizeDepartment(updateData.department);
     }
 
-    // Handle Cloudinary upload result (if present)
+    // --- UPDATE IMAGE & REMOVE OLD FROM CLOUDINARY ---
     if (req.cloudinaryResult) {
-      updateData.imageUrl = req.cloudinaryResult.secure_url;
-      updateData.imagePublicId = req.cloudinaryResult.public_id;
+      try {
+        // Delete old image if exists
+        if (targetUser.imagePublicId) {
+          await cloudinary.uploader.destroy(targetUser.imagePublicId);
+        }
+
+        // Save new image
+        updateData.imageUrl = req.cloudinaryResult.secure_url;
+        updateData.imagePublicId = req.cloudinaryResult.public_id;
+      } catch (err) {
+        console.error("❌ Cloudinary delete/upload error:", err);
+      }
     }
 
-    // Update Clerk publicMetadata (if user has a clerkId)
-    if (targetUser.clerkId) {
+    // --- UPDATE CLERK EMAIL (simple replace, no verification needed) ---
+    if (updateData.email && updateData.email !== targetUser.email) {
+      console.log("📌 Email change detected.");
+      console.log("OLD email:", targetUser.email);
+      console.log("NEW email:", updateData.email);
+
       try {
         await clerkClient.users.updateUser(targetUser.clerkId, {
-          publicMetadata: {
-            role: updateData.role || targetUser.role,
-            department:
-              updateData.department !== undefined
-                ? updateData.department || null
-                : targetUser.department || null,
-          },
+          emailAddress: updateData.email,
         });
+
+        console.log("✔ Clerk email updated successfully (replace mode).");
       } catch (err) {
-        console.error("Clerk update error (non-fatal):", err);
-        // continue - we still try to update Mongo record
+        console.error("❌ Clerk email update FAILED:", err);
+        return res.status(500).json({
+          success: false,
+          message:
+            "Clerk email update failed: " +
+            (err.errors?.[0]?.message || err.message),
+        });
       }
+    }
+
+    // --- UPDATE CLERK METADATA ---
+    try {
+      await clerkClient.users.updateUser(targetUser.clerkId, {
+        publicMetadata: {
+          role: updateData.role || targetUser.role,
+          department:
+            updateData.department !== undefined
+              ? updateData.department || null
+              : targetUser.department || null,
+        },
+      });
+    } catch (err) {
+      console.error("Clerk metadata update failed:", err);
     }
 
     // Update Mongo

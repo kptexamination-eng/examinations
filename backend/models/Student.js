@@ -9,7 +9,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      default: undefined,
       trim: true,
     },
 

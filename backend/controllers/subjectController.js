@@ -8,7 +8,7 @@ export const createSubject = async (req, res) => {
     // Check if the subject code already exists for the same department
     const existing = await Subject.findOne({
       code: code.toUpperCase(),
-      department: department.toLowerCase(),
+      department: department.toUpperCase(),
     });
 
     if (existing) {
@@ -22,7 +22,8 @@ export const createSubject = async (req, res) => {
       code: code.toUpperCase(),
       name,
       semester,
-      department: department.toLowerCase(),
+      department: department.toUpperCase(),
+
       iaMaxMarks: iaMaxMarks ?? undefined, // use provided value or default
     });
 
@@ -43,13 +44,13 @@ export const getSubjects = async (req, res) => {
     let filter = {};
 
     // If HOD, restrict to their department (except Science)
-    if (role === "HOD" && hodDept && hodDept.toLowerCase() !== "SC") {
-      filter.department = hodDept.toLowerCase();
+    if (role === "HOD" && hodDept && hodDept.toUpperCase() !== "SC") {
+      filter.department = hodDept.toUpperCase();
     }
 
     // Optional query filtering
     if (req.query.department) {
-      filter.department = req.query.department.toLowerCase();
+      filter.department = req.query.department.toUpperCase();
     }
 
     if (req.query.semester) {
@@ -90,7 +91,7 @@ export const updateSubject = async (req, res) => {
         code: code.toUpperCase(),
         name,
         semester,
-        department: department.toLowerCase(),
+        department: department.toUpperCase(),
         iaMaxMarks: iaMaxMarks ?? undefined, // allow updating or keep existing
       },
       { new: true, runValidators: true }
@@ -127,5 +128,76 @@ export const deleteSubject = async (req, res) => {
     res.json({ success: true, message: "✅ Subject deleted successfully" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const bulkAddSubjects = async (req, res) => {
+  try {
+    const { subjects } = req.body;
+
+    if (!Array.isArray(subjects) || subjects.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No subjects provided",
+      });
+    }
+
+    let inserted = 0;
+    let skipped = 0;
+    let errors = [];
+
+    for (const row of subjects) {
+      try {
+        let code = row.code?.toString().trim().toUpperCase();
+        let name = row.name?.toString().trim();
+        let semester = Number(row.semester);
+        let department = row.department?.toString().trim().toUpperCase();
+
+        if (!code || !name || !semester || !department) {
+          errors.push({ row, reason: "Missing required fields" });
+          skipped++;
+          continue;
+        }
+
+        if (semester < 1 || semester > 6) {
+          errors.push({ row, reason: "Invalid semester" });
+          skipped++;
+          continue;
+        }
+
+        // Prevent duplicates
+        const exists = await Subject.findOne({ code, department });
+
+        if (exists) {
+          errors.push({ row, reason: "Duplicate subject" });
+          skipped++;
+          continue;
+        }
+
+        await Subject.create({
+          code,
+          name,
+          semester,
+          department,
+          iaMaxMarks: 0,
+        });
+        inserted++;
+      } catch (err) {
+        errors.push({ row, reason: err.message });
+        skipped++;
+      }
+    }
+
+    return res.json({
+      success: true,
+      inserted,
+      skipped,
+      errors,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };

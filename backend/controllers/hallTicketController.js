@@ -9,12 +9,167 @@ import SubjectAllocation from "../models/SubjectAllocation.js"; // you reference
 import IA from "../models/InternalMarks.js";
 import Attendance from "../models/Attendance.js";
 import { checkStudentEligibility } from "../utils/checkEligibility.js";
-import FeePayment from "../models/Fee.js";
+import Fee from "../models/Fee.js";
 
-/**
- * GET /api/halltickets/:studentId/print?examType=NOV2025
- * - requires HOD authorization middleware
- */
+// ----------------------
+// MERGED PDF FUNCTION
+// ----------------------
+export const printAllHallTickets = async (req, res) => {
+  try {
+    const { department, semester, examType } = req.query;
+
+    if (!department || !semester)
+      return res
+        .status(400)
+        .json({ message: "Department & Semester required" });
+
+    // STEP 1 — Get all students
+    const students = await Student.find({
+      currentDepartment: department,
+      semester: semester,
+    }).lean();
+
+    if (students.length === 0)
+      return res.status(404).json({ message: "No students found" });
+
+    // STEP 2 — Create a single merged PDF
+    const doc = new PDFDocument({ size: "A4", margin: 36 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="HallTickets_${department}_Sem${semester}.pdf"`
+    );
+
+    doc.pipe(res);
+
+    // STEP 3 — For each student, generate one page
+    for (let index = 0; index < students.length; index++) {
+      const student = students[index];
+
+      // Fetch subject allocations
+      const allocations = await SubjectAllocation.find({
+        department: student.currentDepartment,
+        semester: Number(student.semester),
+      })
+        .populate("subject")
+        .lean();
+
+      const allocationIds = allocations.map((a) => a._id);
+
+      // Eligibility check
+      const eligibility = await checkStudentEligibility({
+        studentId: student._id,
+        subjectAllocationIds: allocationIds,
+        examType,
+      });
+
+      if (index !== 0) doc.addPage(); // page break for next student
+
+      // ------------- PDF DESIGN ---------------
+      doc.fontSize(14).text("GOVERNMENT OF KARNATAKA", { align: "center" });
+      doc
+        .fontSize(12)
+        .text("Board of Technical Examination, Palace Road, Bangalore", {
+          align: "center",
+        });
+      doc.moveDown(0.3);
+      doc.fontSize(18).text("ADMISSION TICKET", {
+        align: "center",
+        underline: true,
+      });
+
+      doc.moveDown(1);
+
+      // Student details
+      const startY = doc.y;
+      doc.fontSize(11);
+      doc.text(`Register No: ${student.registerNumber}`, 40, startY);
+      doc.text(`Name: ${student.name}`);
+      doc.text(`Dept: ${student.currentDepartment}`);
+      doc.text(`Sem: ${student.semester}`);
+      doc.text(`Exam Type: ${examType}`);
+
+      // Student photo
+      if (student.imageUrl) {
+        try {
+          const resp = await axios.get(student.imageUrl, {
+            responseType: "arraybuffer",
+          });
+          const imageBuffer = Buffer.from(resp.data, "binary");
+          doc.image(imageBuffer, 420, startY - 5, {
+            fit: [100, 100],
+          });
+        } catch (err) {
+          console.log("Photo load failed", student.name);
+        }
+      }
+
+      doc.moveDown(4);
+
+      // Subject Table Head
+      doc.font("Helvetica-Bold");
+      doc.text("Subject Code", 40);
+      doc.text("Subject Name", 140);
+      doc.text("IA", 340);
+      doc.text("Attendance", 400);
+
+      doc.moveDown(0.5);
+      doc.font("Helvetica");
+
+      // Table rows
+      let y = doc.y;
+      for (const alloc of allocations) {
+        const ia = await IA.findOne({
+          studentId: student._id,
+          subjectAllocation: alloc._id,
+        }).lean();
+
+        const att = await Attendance.findOne({
+          studentId: student._id,
+          subjectAllocation: alloc._id,
+        }).lean();
+
+        doc.text(`${alloc.subject.code}`, 40, y);
+        doc.text(`${alloc.subject.name}`, 140, y, { width: 180 });
+        doc.text(ia ? `${ia.finalIA}/${ia.maxMarks}` : "-", 340, y, {
+          width: 60,
+        });
+        doc.text(att ? `${att.percentage}%` : "-", 400, y, { width: 120 });
+
+        y += 20;
+      }
+
+      doc.moveDown(1);
+
+      // Eligibility
+      doc.fontSize(11).font("Helvetica-Bold").text("Eligibility:");
+      doc.font("Helvetica");
+      if (eligibility.eligible) {
+        doc.fillColor("green").text("✔ Eligible", { underline: true });
+        doc.fillColor("black");
+      } else {
+        doc.fillColor("red").text("✘ NOT ELIGIBLE", { underline: true });
+        doc.fillColor("black");
+
+        eligibility.reasons.forEach((r) => {
+          doc.text(`• ${r}`);
+        });
+      }
+
+      doc.moveDown(3);
+      doc.text("Signature of Student", 40);
+      doc.text("HOD", 250);
+      doc.text("Principal", 420);
+    }
+
+    // END
+    doc.end();
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({ message: "Failed to generate merged hall tickets" });
+  }
+};
+
 export const printHallTicket = async (req, res) => {
   try {
     const { studentId } = req.params;

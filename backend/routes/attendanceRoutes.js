@@ -5,6 +5,7 @@ import {
   approveAttendance,
   getStudentAttendance,
   getPendingAttendanceBySubject,
+  getFinalAttendanceByAllocation,
 } from "../controllers/attendanceController.js";
 
 import { authenticateUser } from "../middleware/authMiddleware.js";
@@ -13,6 +14,12 @@ const router = express.Router();
 
 // Staff submits
 router.post("/submit", authenticateUser, submitAttendance);
+// FINAL APPROVED attendance for subject allocation
+router.get(
+  "/final/:allocationId",
+  authenticateUser,
+  getFinalAttendanceByAllocation
+);
 
 // HOD pending list
 router.get("/pending/:allocationId", authenticateUser, getPendingAttendance);

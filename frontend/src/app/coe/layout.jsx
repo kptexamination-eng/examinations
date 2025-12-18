@@ -66,6 +66,11 @@ export default function coeLayout({ children }) {
       href: "/coe/subjectsList",
       icon: <UserCheck className="w-5 h-5" />,
     },
+    {
+      label: "Clerk Users",
+      href: "/coe/manageClerkUsers",
+      icon: <UserCheck className="w-5 h-5" />,
+    },
   ];
 
   return (

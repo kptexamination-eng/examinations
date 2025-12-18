@@ -455,8 +455,19 @@ export const getStudents = async (req, res) => {
     const dept = department?.toUpperCase();
 
     let students;
-
-    if (role === "Admin" && role === "OfficeFee") {
+    console.log(req.user);
+    if (
+      role === "Admin" ||
+      role === "Registrar" ||
+      role === "OfficeFee" ||
+      role === "COE" ||
+      role === "AssistantCOE" ||
+      role === "OfficeExam" ||
+      role === "OfficeAdmissions" ||
+      role === "Principal" ||
+      role === "MarkEntryCaseWorker" ||
+      role === "ChairmanOfExams"
+    ) {
       students = await Student.find().sort({ createdAt: -1 });
     } else if (role === "HOD" || role === "Staff") {
       if (dept === "SC") {
